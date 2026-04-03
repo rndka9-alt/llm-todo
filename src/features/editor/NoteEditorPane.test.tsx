@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NoteEditorPane } from './NoteEditorPane';
 
@@ -61,8 +61,11 @@ describe('NoteEditorPane', () => {
           },
         ]}
         analysisHighlights={[]}
+        selectedBlockIds={[]}
+        selectionRange={null}
         onTextChange={() => undefined}
         onSelectionChange={() => undefined}
+        onRegenerateSelection={() => undefined}
       />,
     );
 
@@ -75,5 +78,36 @@ describe('NoteEditorPane', () => {
     expect(textarea.className).toContain('scrollbar-hidden');
     expect(mirror).toBeTruthy();
     expect(mirror?.getAttribute('style')).toContain('width: 312px');
+  });
+
+  it('shows a regenerate button for an in-block text selection', () => {
+    const onRegenerateSelection = vi.fn();
+    const onSelectionChange = vi.fn();
+
+    render(
+      <NoteEditorPane
+        noteText={'Launch prep\n- Fix the mobile settings bug before Friday #frontend'}
+        displayHighlights={[]}
+        analysisHighlights={[]}
+        selectedBlockIds={['block-2']}
+        selectionRange={{
+          start: 14,
+          end: 40,
+        }}
+        onTextChange={() => undefined}
+        onSelectionChange={onSelectionChange}
+        onRegenerateSelection={onRegenerateSelection}
+      />,
+    );
+
+    const button = screen.getByRole('button', {
+      name: '재생성하기',
+    });
+
+    fireEvent.click(button);
+
+    expect(button.querySelector('svg')).toBeTruthy();
+    expect(onRegenerateSelection).toHaveBeenCalledTimes(1);
+    expect(onSelectionChange).toHaveBeenCalledWith(40, 40);
   });
 });

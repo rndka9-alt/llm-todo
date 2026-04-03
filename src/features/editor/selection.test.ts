@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { findTodoForSelection } from './selection';
+import { findBlockIdsForSelection, findTodoForSelection } from './selection';
 
 describe('findTodoForSelection', () => {
   it('finds a highlight when the caret enters its range', () => {
@@ -55,5 +55,112 @@ describe('findTodoForSelection', () => {
     );
 
     expect(result?.todoId).toBe('todo-1');
+  });
+});
+
+describe('findBlockIdsForSelection', () => {
+  it('returns one block id when the selection stays within one block', () => {
+    const result = findBlockIdsForSelection(
+      [
+        {
+          id: 'block-1',
+          text: 'Kickoff notes',
+          range: {
+            start: 0,
+            end: 12,
+          },
+          createdAt: 0,
+          updatedAt: 0,
+          lastParsedAt: null,
+          parseStatus: 'idle',
+        },
+        {
+          id: 'block-2',
+          text: 'Launch prep',
+          range: {
+            start: 14,
+            end: 25,
+          },
+          createdAt: 0,
+          updatedAt: 0,
+          lastParsedAt: null,
+          parseStatus: 'idle',
+        },
+      ],
+      15,
+      24,
+    );
+
+    expect(result).toEqual(['block-2']);
+  });
+
+  it('returns every intersecting block id when the selection crosses block boundaries', () => {
+    const result = findBlockIdsForSelection(
+      [
+        {
+          id: 'block-1',
+          text: 'Kickoff notes',
+          range: {
+            start: 0,
+            end: 12,
+          },
+          createdAt: 0,
+          updatedAt: 0,
+          lastParsedAt: null,
+          parseStatus: 'idle',
+        },
+        {
+          id: 'block-2',
+          text: 'Launch prep',
+          range: {
+            start: 14,
+            end: 25,
+          },
+          createdAt: 0,
+          updatedAt: 0,
+          lastParsedAt: null,
+          parseStatus: 'idle',
+        },
+        {
+          id: 'block-3',
+          text: 'Loose ends',
+          range: {
+            start: 27,
+            end: 37,
+          },
+          createdAt: 0,
+          updatedAt: 0,
+          lastParsedAt: null,
+          parseStatus: 'idle',
+        },
+      ],
+      10,
+      30,
+    );
+
+    expect(result).toEqual(['block-1', 'block-2', 'block-3']);
+  });
+
+  it('returns an empty list for a collapsed selection', () => {
+    const result = findBlockIdsForSelection(
+      [
+        {
+          id: 'block-1',
+          text: 'Kickoff notes',
+          range: {
+            start: 0,
+            end: 12,
+          },
+          createdAt: 0,
+          updatedAt: 0,
+          lastParsedAt: null,
+          parseStatus: 'idle',
+        },
+      ],
+      4,
+      4,
+    );
+
+    expect(result).toEqual([]);
   });
 });

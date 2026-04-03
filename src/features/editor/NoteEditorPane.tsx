@@ -1,20 +1,26 @@
+import { RefreshCw } from 'lucide-react';
 import { useLayoutEffect, useRef, useState } from 'react';
-import type { AnalysisHighlight, DisplayHighlight } from '../../domain/models';
+import type { AnalysisHighlight, DisplayHighlight, TextRange } from '../../domain/models';
 import { buildDecoratedText } from './buildDecoratedText';
 
 interface NoteEditorPaneProps {
   noteText: string;
   displayHighlights: DisplayHighlight[];
   analysisHighlights: AnalysisHighlight[];
+  selectedBlockIds: string[];
+  selectionRange: TextRange | null;
   onTextChange: (value: string) => void;
   onSelectionChange: (selectionStart: number, selectionEnd: number) => void;
+  onRegenerateSelection: () => void;
 }
 
 export function NoteEditorPane(props: NoteEditorPaneProps) {
   const [scrollTop, setScrollTop] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
   const [mirrorWidth, setMirrorWidth] = useState<number | null>(null);
+  const [selectionAnchor, setSelectionAnchor] = useState<{ top: number; left: number } | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const selectionMarkerRef = useRef<HTMLSpanElement | null>(null);
   const editorFieldId = 'note-editor-input';
   const editorFieldName = 'noteText';
   const decoratedSegments = buildDecoratedText(
@@ -32,13 +38,17 @@ export function NoteEditorPane(props: NoteEditorPaneProps) {
       return;
     }
 
+    const currentTextarea = textarea;
+
     function syncMirrorWidth() {
+      const nextWidth = currentTextarea.clientWidth;
+
       setMirrorWidth((currentWidth) => {
-        if (currentWidth === textarea.clientWidth) {
+        if (currentWidth === nextWidth) {
           return currentWidth;
         }
 
-        return textarea.clientWidth;
+        return nextWidth;
       });
     }
 
@@ -52,7 +62,7 @@ export function NoteEditorPane(props: NoteEditorPaneProps) {
       syncMirrorWidth();
     });
 
-    observer.observe(textarea);
+    observer.observe(currentTextarea);
 
     return () => {
       observer.disconnect();
@@ -67,13 +77,66 @@ export function NoteEditorPane(props: NoteEditorPaneProps) {
     }
 
     setMirrorWidth((currentWidth) => {
-      if (currentWidth === textarea.clientWidth) {
+      const nextWidth = textarea.clientWidth;
+
+      if (currentWidth === nextWidth) {
         return currentWidth;
       }
 
-      return textarea.clientWidth;
+      return nextWidth;
     });
   }, [props.noteText]);
+
+  useLayoutEffect(() => {
+    if (props.selectionRange === null || props.selectedBlockIds.length === 0) {
+      setSelectionAnchor(null);
+      return;
+    }
+
+    const marker = selectionMarkerRef.current;
+
+    if (marker === null) {
+      setSelectionAnchor(null);
+      return;
+    }
+
+    const nextAnchor = {
+      top: Math.max(8, marker.offsetTop - scrollTop - 44),
+      left:
+        mirrorWidth === null
+          ? Math.max(8, marker.offsetLeft - scrollLeft)
+          : Math.min(
+              Math.max(8, marker.offsetLeft - scrollLeft),
+              Math.max(8, mirrorWidth - 168),
+            ),
+    };
+
+    setSelectionAnchor((currentAnchor) => {
+      if (
+        currentAnchor !== null &&
+        currentAnchor.top === nextAnchor.top &&
+        currentAnchor.left === nextAnchor.left
+      ) {
+        return currentAnchor;
+      }
+
+      return nextAnchor;
+    });
+  }, [mirrorWidth, props.noteText, props.selectedBlockIds, props.selectionRange, scrollLeft, scrollTop]);
+
+  function clearTextareaSelection() {
+    const textarea = textareaRef.current;
+
+    if (textarea === null) {
+      return;
+    }
+
+    const collapseIndex = props.selectionRange?.end ?? textarea.selectionEnd;
+
+    textarea.focus();
+    textarea.setSelectionRange(collapseIndex, collapseIndex);
+    props.onSelectionChange(collapseIndex, collapseIndex);
+  }
 
   return (
     <section className="flex h-full min-h-0 flex-col">
@@ -94,6 +157,46 @@ export function NoteEditorPane(props: NoteEditorPaneProps) {
               ))}
             </div>
           </div>
+
+          {props.selectionRange !== null && props.selectedBlockIds.length > 0 ? (
+            <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden opacity-0">
+              <div
+                className={`${editorTextClassName} absolute left-0 top-0 text-transparent`}
+                style={{
+                  width: mirrorWidth === null ? undefined : `${mirrorWidth}px`,
+                }}
+              >
+                {props.noteText.slice(0, props.selectionRange.start)}
+                <span ref={selectionMarkerRef} className="inline-block h-7 w-0 align-top" />
+                {props.noteText.slice(props.selectionRange.start)}
+              </div>
+            </div>
+          ) : null}
+
+          {selectionAnchor !== null && props.selectedBlockIds.length > 0 ? (
+            <div
+              className="pointer-events-none absolute z-20"
+              style={{
+                left: `${selectionAnchor.left}px`,
+                top: `${selectionAnchor.top}px`,
+              }}
+            >
+              <button
+                type="button"
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                }}
+                onClick={() => {
+                  props.onRegenerateSelection();
+                  clearTextareaSelection();
+                }}
+                className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-sky-300/35 bg-slate-900/95 px-3 py-2 text-xs font-medium text-sky-100 shadow-[0_10px_30px_rgba(2,6,23,0.45)] transition hover:border-sky-200/50 hover:bg-slate-900"
+              >
+                <RefreshCw aria-hidden="true" className="h-4 w-4" strokeWidth={1.8} />
+                <span>재생성하기</span>
+              </button>
+            </div>
+          ) : null}
 
           <textarea
             ref={textareaRef}

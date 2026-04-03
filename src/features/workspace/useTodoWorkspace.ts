@@ -27,7 +27,8 @@ import {
 } from '../../domain/parsing/analysisPlan';
 import { projectTodoProjection } from '../../domain/todos/projectTodoProjection';
 import { createThrottleQueue } from '../../lib/createThrottleQueue';
-import { findTodoForSelection } from '../editor/selection';
+import { createRange, rangeLength } from '../../lib/range';
+import { findBlockIdsForSelection, findTodoForSelection } from '../editor/selection';
 import { createPersistedSnapshot, restoreWorkspaceState } from './workspacePersistence';
 import type { WorkspaceSnapshotRepository } from './workspacePersistence';
 import { createInitialWorkspaceState, type WorkspaceState } from './workspaceState';
@@ -377,12 +378,60 @@ export function useTodoWorkspace(options: UseTodoWorkspaceOptions = {}) {
 
   function updateSelection(selectionStart: number, selectionEnd: number) {
     const matched = findTodoForSelection(projection.highlights, selectionStart, selectionEnd);
+    const normalizedSelectionRange = createRange(selectionStart, selectionEnd);
+    const selectedTextRange =
+      rangeLength(normalizedSelectionRange) === 0 ? null : normalizedSelectionRange;
+    const selectedBlockIds =
+      selectedTextRange === null
+        ? []
+        : findBlockIdsForSelection(state.blocks, selectionStart, selectionEnd);
 
     setState((current) => ({
       ...current,
       activeTodoId: matched ? matched.todoId : null,
+      selectedBlockIds,
+      selectedTextRange,
       focusNonce: matched ? current.focusNonce + 1 : current.focusNonce,
     }));
+  }
+
+  function regenerateSelectedBlocks() {
+    if (state.selectedBlockIds.length === 0) {
+      return;
+    }
+
+    const selectedBlocks = state.blocks.filter((block) => state.selectedBlockIds.includes(block.id));
+
+    if (selectedBlocks.length === 0) {
+      return;
+    }
+
+    const firstBlock = selectedBlocks[0];
+    const lastBlock = selectedBlocks[selectedBlocks.length - 1];
+
+    if (typeof firstBlock === 'undefined' || typeof lastBlock === 'undefined') {
+      return;
+    }
+
+    parseThrottleRef.current.cancel();
+
+    executeParse({
+      noteTitle: state.noteTitle,
+      blocks: state.blocks,
+      interpretations: state.interpretations,
+      dirtyRegion: {
+        kind: 'none',
+        previousRange: {
+          start: firstBlock.range.start,
+          end: lastBlock.range.end,
+        },
+        nextRange: {
+          start: firstBlock.range.start,
+          end: lastBlock.range.end,
+        },
+      },
+      focusBlockIds: selectedBlocks.map((block) => block.id),
+    });
   }
 
   function toggleTodo(todoId: string) {
@@ -405,6 +454,8 @@ export function useTodoWorkspace(options: UseTodoWorkspaceOptions = {}) {
     blocks: state.blocks,
     parseState: state.parseState,
     activeTodoId: state.activeTodoId,
+    selectedBlockIds: state.selectedBlockIds,
+    selectedTextRange: state.selectedTextRange,
     focusNonce: state.focusNonce,
     checkedTodoIds: state.checkedTodoIds,
     lastUpdatedAt: state.lastUpdatedAt,
@@ -414,6 +465,7 @@ export function useTodoWorkspace(options: UseTodoWorkspaceOptions = {}) {
     setNoteTitle,
     setNoteText,
     updateSelection,
+    regenerateSelectedBlocks,
     toggleTodo,
   };
 }

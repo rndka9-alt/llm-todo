@@ -3,11 +3,30 @@ import { renderHook, waitFor, act } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { describe, expect, it } from 'vitest';
 import { MockTodoExtractionAdapter } from '../../adapters/llm/mockTodoExtractionAdapter';
+import type { TodoExtractionAdapter } from '../../adapters/llm/todoExtractionAdapter';
+import type { TodoExtractionAdapterInput, TodoExtractionResult } from '../../adapters/llm/types';
 import { createTodoQueryClient } from '../../lib/queryClient';
 import type { PersistedWorkspaceSnapshot, WorkspaceSnapshotRepository } from './workspacePersistence';
 import { createPersistedSnapshot } from './workspacePersistence';
 import { createInitialWorkspaceState } from './workspaceState';
 import { useTodoWorkspace } from './useTodoWorkspace';
+
+class RecordingTodoExtractionAdapter implements TodoExtractionAdapter {
+  readonly calls: TodoExtractionAdapterInput[] = [];
+
+  async extract(input: TodoExtractionAdapterInput): Promise<TodoExtractionResult> {
+    this.calls.push(input);
+
+    return {
+      results: input.focusBlocks.map((block) => ({
+        blockId: block.id,
+        hasActionableTodo: false,
+        todos: [],
+      })),
+      traces: [],
+    };
+  }
+}
 
 function createSnapshot(): PersistedWorkspaceSnapshot {
   const state = createInitialWorkspaceState(10);
@@ -72,5 +91,52 @@ describe('useTodoWorkspace', () => {
 
       expect(lastSnapshot?.noteTitle).toBe('Edited note');
     });
+  });
+
+  it('re-parses every selected block when regeneration is requested', async () => {
+    const snapshot = createSnapshot();
+    const queryClient = createTodoQueryClient();
+    const adapter = new RecordingTodoExtractionAdapter();
+    const repository: WorkspaceSnapshotRepository = {
+      load: async () => snapshot,
+      save: async () => undefined,
+    };
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+
+    const { result } = renderHook(
+      () =>
+        useTodoWorkspace({
+          repository,
+          adapter,
+        }),
+      {
+        wrapper,
+      },
+    );
+
+    await waitFor(() => {
+      expect(result.current.noteTitle).toBe('Hydrated note');
+    });
+
+    const multiBlockSelectionEnd = result.current.blocks[1]?.range.end ?? 0;
+
+    act(() => {
+      result.current.updateSelection(0, multiBlockSelectionEnd);
+    });
+
+    expect(result.current.selectedBlockIds.length).toBeGreaterThan(1);
+
+    act(() => {
+      result.current.regenerateSelectedBlocks();
+    });
+
+    await waitFor(() => {
+      expect(adapter.calls).toHaveLength(1);
+    });
+
+    expect(adapter.calls[0]?.focusBlocks.length).toBe(result.current.selectedBlockIds.length);
+    expect(adapter.calls[0]?.focusBlocks.map((block) => block.id)).toEqual(result.current.selectedBlockIds);
   });
 });

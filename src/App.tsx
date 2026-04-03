@@ -60,8 +60,11 @@ function AppScreen(props: AppProps) {
                 noteText={workspace.noteText}
                 displayHighlights={workspace.displayHighlights}
                 analysisHighlights={workspace.analysisHighlights}
+                selectedBlockIds={workspace.selectedBlockIds}
+                selectionRange={workspace.selectedTextRange}
                 onTextChange={workspace.setNoteText}
                 onSelectionChange={workspace.updateSelection}
+                onRegenerateSelection={workspace.regenerateSelectedBlocks}
               />
             </div>
 

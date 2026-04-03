@@ -207,6 +207,8 @@ export function restoreWorkspaceState(
     analysisHighlights: [],
     parseState: hasInterpretations ? 'updated' : 'idle',
     activeTodoId: null,
+    selectedBlockIds: [],
+    selectedTextRange: null,
     focusNonce: 0,
     checkedTodoIds: snapshot.checkedTodoIds,
     lastUpdatedAt: snapshot.lastUpdatedAt,

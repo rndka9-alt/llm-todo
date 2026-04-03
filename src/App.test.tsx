@@ -1,13 +1,32 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { MockTodoExtractionAdapter } from './adapters/llm/mockTodoExtractionAdapter';
 import App from './App';
+import type { TodoExtractionAdapter } from './adapters/llm/todoExtractionAdapter';
+import type { TodoExtractionAdapterInput, TodoExtractionResult } from './adapters/llm/types';
 import type { WorkspaceSnapshotRepository } from './features/workspace/workspacePersistence';
 
 const repository: WorkspaceSnapshotRepository = {
   load: async () => null,
   save: async () => undefined,
 };
+
+class RecordingTodoExtractionAdapter implements TodoExtractionAdapter {
+  readonly calls: TodoExtractionAdapterInput[] = [];
+
+  async extract(input: TodoExtractionAdapterInput): Promise<TodoExtractionResult> {
+    this.calls.push(input);
+
+    return {
+      results: input.focusBlocks.map((block) => ({
+        blockId: block.id,
+        hasActionableTodo: false,
+        todos: [],
+      })),
+      traces: [],
+    };
+  }
+}
 
 describe('App', () => {
   it('renders extracted todos and refreshes them after note edits', async () => {
@@ -33,6 +52,11 @@ describe('App', () => {
     expect(todoTitle.className).toContain('whitespace-pre-wrap');
     expect(todoTitle.className).not.toContain('truncate');
     const checkbox = screen.getAllByRole('checkbox')[0];
+
+    if (typeof checkbox === 'undefined') {
+      throw new Error('Expected at least one todo checkbox');
+    }
+
     const indicator = checkbox.parentElement?.querySelector('span');
     expect(checkbox.parentElement?.className).toContain('items-center');
     expect(checkbox.parentElement?.className).toContain('pt-1');
@@ -62,5 +86,40 @@ describe('App', () => {
         timeout: 2000,
       }),
     ).toBeTruthy();
+  });
+
+  it('shows a regenerate action for multi-block selection and re-parses the selected blocks', async () => {
+    const adapter = new RecordingTodoExtractionAdapter();
+
+    render(<App adapter={adapter} repository={repository} />);
+
+    await waitFor(() => {
+      expect(adapter.calls).toHaveLength(1);
+    });
+
+    const editor = screen.getByPlaceholderText(
+      'Write freeform notes here. TODOs will be derived on the left.',
+    );
+
+    fireEvent.select(editor, {
+      target: {
+        selectionStart: 0,
+        selectionEnd: 320,
+      },
+    });
+
+    const button = await screen.findByRole('button', {
+      name: '재생성하기',
+    });
+
+    expect(button.querySelector('svg')).toBeTruthy();
+
+    fireEvent.click(button);
+
+    await waitFor(() => {
+      expect(adapter.calls).toHaveLength(2);
+    });
+
+    expect(adapter.calls[1]?.focusBlocks.length).toBeGreaterThan(1);
   });
 });
