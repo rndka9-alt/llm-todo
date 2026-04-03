@@ -22,9 +22,9 @@ function parseTimeout(value: string | undefined): number {
     return fallback;
   }
 
-  const parsed = Number.parseInt(value, 10);
+  const parsed = parseInt(value, 10);
 
-  if (!Number.isFinite(parsed) || parsed <= 0) {
+  if (!isFinite(parsed) || parsed <= 0) {
     return fallback;
   }
 

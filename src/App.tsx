@@ -1,10 +1,12 @@
 import { QueryClientProvider } from '@tanstack/react-query';
 import { useState } from 'react';
+import type { TodoExtractionAdapter } from './adapters/llm/todoExtractionAdapter';
 import { NoteEditorPane } from './features/editor/NoteEditorPane';
 import { TodoListPane } from './features/todos/TodoListPane';
 import { ToastViewport } from './features/toast/ToastViewport';
 import { useToastQueue } from './features/toast/useToastQueue';
 import { useTodoWorkspace } from './features/workspace/useTodoWorkspace';
+import type { WorkspaceSnapshotRepository } from './features/workspace/workspacePersistence';
 import { createTodoQueryClient } from './lib/queryClient';
 
 function formatUpdatedLabel(timestamp: number | null): string {
@@ -21,9 +23,16 @@ function formatUpdatedLabel(timestamp: number | null): string {
   return formatter.format(timestamp);
 }
 
-function AppScreen() {
+interface AppProps {
+  adapter?: TodoExtractionAdapter;
+  repository?: WorkspaceSnapshotRepository;
+}
+
+function AppScreen(props: AppProps) {
   const toastQueue = useToastQueue();
   const workspace = useTodoWorkspace({
+    ...(typeof props.adapter === 'undefined' ? {} : { adapter: props.adapter }),
+    ...(typeof props.repository === 'undefined' ? {} : { repository: props.repository }),
     onExtractionError: toastQueue.pushToast,
   });
 
@@ -70,12 +79,16 @@ function AppScreen() {
   );
 }
 
-export default function App() {
+export default function App(props: AppProps) {
   const [queryClient] = useState(createTodoQueryClient);
+  const screenProps: AppProps = {
+    ...(typeof props.adapter === 'undefined' ? {} : { adapter: props.adapter }),
+    ...(typeof props.repository === 'undefined' ? {} : { repository: props.repository }),
+  };
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AppScreen />
+      <AppScreen {...screenProps} />
     </QueryClientProvider>
   );
 }

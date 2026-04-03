@@ -1,10 +1,17 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import { MockTodoExtractionAdapter } from './adapters/llm/mockTodoExtractionAdapter';
 import App from './App';
+import type { WorkspaceSnapshotRepository } from './features/workspace/workspacePersistence';
+
+const repository: WorkspaceSnapshotRepository = {
+  load: async () => null,
+  save: async () => undefined,
+};
 
 describe('App', () => {
   it('renders extracted todos and refreshes them after note edits', async () => {
-    render(<App />);
+    render(<App adapter={new MockTodoExtractionAdapter()} repository={repository} />);
     expect(screen.queryByText('LLM TODO PoC')).toBeNull();
     expect(screen.queryByPlaceholderText('Untitled note')).toBeNull();
     expect(screen.queryByText('Derived TODOs')).toBeNull();
