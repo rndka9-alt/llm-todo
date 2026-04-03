@@ -364,16 +364,19 @@ export function useTodoWorkspace(options: UseTodoWorkspaceOptions = {}) {
     const dirtyRegion = diffText(state.noteText, nextText);
     const nextBlocks = reconcileBlocks(state.blocks, segmentNote(nextText), now);
     const dirtyBlockIds = selectDirtyBlockIds(nextBlocks, dirtyRegion, now);
+    const nextBlockIds = new Set(nextBlocks.map((block) => block.id));
+    const nextInterpretations = state.interpretations.filter((it) => nextBlockIds.has(it.blockId));
 
     setState((current) => ({
       ...current,
       noteText: nextText,
       blocks: nextBlocks,
+      interpretations: nextInterpretations,
       analysisHighlights: buildAnalysisHighlights(nextBlocks, dirtyRegion),
       parseState: dirtyBlockIds.length > 0 ? 'parsing' : 'updated',
     }));
 
-    scheduleParse(state.noteTitle, nextBlocks, state.interpretations, dirtyRegion, dirtyBlockIds);
+    scheduleParse(state.noteTitle, nextBlocks, nextInterpretations, dirtyRegion, dirtyBlockIds);
   }
 
   function updateSelection(selectionStart: number, selectionEnd: number) {
