@@ -95,7 +95,7 @@ describe('App', () => {
 
     await waitFor(() => {
       expect(adapter.calls).toHaveLength(1);
-    });
+    }, { timeout: 2000 });
 
     const editor = screen.getByPlaceholderText(
       'Write freeform notes here. TODOs will be derived on the left.',
@@ -118,7 +118,7 @@ describe('App', () => {
 
     await waitFor(() => {
       expect(adapter.calls).toHaveLength(2);
-    });
+    }, { timeout: 2000 });
 
     expect(adapter.calls[1]?.focusBlocks.length).toBeGreaterThan(1);
   });

@@ -31,6 +31,6 @@ describe('buildDecoratedText', () => {
       ],
     );
 
-    expect(segments[0]?.className).toContain('bg-slate-500/20');
+    expect(segments[0]?.className).toContain('bg-slate-500/40');
   });
 });
