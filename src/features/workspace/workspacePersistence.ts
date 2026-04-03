@@ -210,6 +210,8 @@ export function restoreWorkspaceState(
     selectedBlockIds: [],
     selectedTextRange: null,
     focusNonce: 0,
+    editorFocusRange: null,
+    editorFocusNonce: 0,
     checkedTodoIds: snapshot.checkedTodoIds,
     lastUpdatedAt: snapshot.lastUpdatedAt,
   };

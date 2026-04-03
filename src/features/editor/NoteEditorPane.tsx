@@ -1,5 +1,5 @@
 import { RefreshCw } from 'lucide-react';
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { AnalysisHighlight, DisplayHighlight, TextRange } from '../../domain/models';
 import { buildDecoratedText } from './buildDecoratedText';
 
@@ -12,6 +12,8 @@ interface NoteEditorPaneProps {
   onTextChange: (value: string) => void;
   onSelectionChange: (selectionStart: number, selectionEnd: number) => void;
   onRegenerateSelection: () => void;
+  focusRange: TextRange | null;
+  focusNonce: number;
 }
 
 export function NoteEditorPane(props: NoteEditorPaneProps) {
@@ -145,6 +147,26 @@ export function NoteEditorPane(props: NoteEditorPaneProps) {
     textarea.setSelectionRange(collapseIndex, collapseIndex);
     props.onSelectionChange(collapseIndex, collapseIndex);
   }
+
+  useEffect(() => {
+    const textarea = textareaRef.current;
+
+    if (textarea === null || props.focusRange === null || props.focusNonce === 0) {
+      return;
+    }
+
+    const { start, end } = props.focusRange;
+
+    // 커서를 끝에 놓아 브라우저가 해당 위치로 스크롤하도록 유도
+    textarea.focus();
+    textarea.setSelectionRange(end, end);
+
+    // 스크롤 완료 후 셀렉션 확장
+    requestAnimationFrame(() => {
+      textarea.setSelectionRange(start, end);
+      props.onSelectionChange(start, end);
+    });
+  }, [props.focusNonce]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <section className="flex h-full min-h-0 flex-col">

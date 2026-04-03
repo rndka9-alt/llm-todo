@@ -65,6 +65,8 @@ function AppScreen(props: AppProps) {
                 onTextChange={workspace.setNoteText}
                 onSelectionChange={workspace.updateSelection}
                 onRegenerateSelection={workspace.regenerateSelectedBlocks}
+                focusRange={workspace.editorFocusRange}
+                focusNonce={workspace.editorFocusNonce}
               />
             </div>
 
@@ -75,6 +77,7 @@ function AppScreen(props: AppProps) {
                 focusNonce={workspace.focusNonce}
                 checkedTodoIds={workspace.checkedTodoIds}
                 onToggleTodo={workspace.toggleTodo}
+                onNavigateToSource={workspace.navigateToTodoSource}
               />
             </div>
           </main>

@@ -16,6 +16,7 @@ import type {
   DirtyRegion,
   NoteBlock,
   ParseStatus,
+  TextRange,
 } from '../../domain/models';
 import { diffText } from '../../domain/note/diffText';
 import { reconcileBlocks } from '../../domain/note/reconcileBlocks';
@@ -451,6 +452,14 @@ export function useTodoWorkspace(options: UseTodoWorkspaceOptions = {}) {
     });
   }
 
+  function navigateToTodoSource(range: TextRange) {
+    setState((current) => ({
+      ...current,
+      editorFocusRange: range,
+      editorFocusNonce: current.editorFocusNonce + 1,
+    }));
+  }
+
   function toggleTodo(todoId: string) {
     setState((current) => {
       const exists = current.checkedTodoIds.includes(todoId);
@@ -474,6 +483,8 @@ export function useTodoWorkspace(options: UseTodoWorkspaceOptions = {}) {
     selectedBlockIds: state.selectedBlockIds,
     selectedTextRange: state.selectedTextRange,
     focusNonce: state.focusNonce,
+    editorFocusRange: state.editorFocusRange,
+    editorFocusNonce: state.editorFocusNonce,
     checkedTodoIds: state.checkedTodoIds,
     lastUpdatedAt: state.lastUpdatedAt,
     analysisHighlights: state.analysisHighlights,
@@ -483,6 +494,7 @@ export function useTodoWorkspace(options: UseTodoWorkspaceOptions = {}) {
     setNoteText,
     updateSelection,
     regenerateSelectedBlocks,
+    navigateToTodoSource,
     toggleTodo,
   };
 }

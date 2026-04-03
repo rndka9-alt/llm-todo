@@ -66,6 +66,8 @@ describe('NoteEditorPane', () => {
         onTextChange={() => undefined}
         onSelectionChange={() => undefined}
         onRegenerateSelection={() => undefined}
+        focusRange={null}
+        focusNonce={0}
       />,
     );
 
@@ -97,6 +99,8 @@ describe('NoteEditorPane', () => {
         onTextChange={() => undefined}
         onSelectionChange={onSelectionChange}
         onRegenerateSelection={onRegenerateSelection}
+        focusRange={null}
+        focusNonce={0}
       />,
     );
 

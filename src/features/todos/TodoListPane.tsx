@@ -1,5 +1,6 @@
+import { ArrowUpRight } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import type { TodoProjectionItem } from '../../domain/models';
+import type { TextRange, TodoProjectionItem } from '../../domain/models';
 
 interface TodoListPaneProps {
   todos: TodoProjectionItem[];
@@ -7,6 +8,7 @@ interface TodoListPaneProps {
   focusNonce: number;
   checkedTodoIds: string[];
   onToggleTodo: (todoId: string) => void;
+  onNavigateToSource: (range: TextRange) => void;
 }
 
 export function TodoListPane(props: TodoListPaneProps) {
@@ -75,34 +77,44 @@ export function TodoListPane(props: TodoListPaneProps) {
                   marginLeft: `${todo.depth * 14}px`,
                 }}
               >
-                <label className="flex cursor-default items-start gap-3">
-                  <div className="flex items-center gap-2 pt-1">
-                    <input
-                      id={checkboxId}
-                      name={checkboxId}
-                      type="checkbox"
-                      checked={isChecked}
-                      onChange={() => props.onToggleTodo(todo.id)}
-                      className="h-4 w-4 rounded border-white/20 bg-slate-950 text-sky-300"
-                    />
-                    <span
-                      className={[
-                        'h-2.5 w-2.5 shrink-0 rounded-full',
-                        todo.accentToken,
-                      ].join(' ')}
-                    />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p
-                      className={[
-                        'whitespace-pre-wrap break-words text-sm text-slate-100 transition-opacity [overflow-wrap:anywhere]',
-                        isChecked ? 'line-through opacity-50' : 'opacity-100',
-                      ].join(' ')}
-                    >
-                      {todo.title}
-                    </p>
-                  </div>
-                </label>
+                <div className="flex items-start gap-3">
+                  <label className="flex min-w-0 flex-1 cursor-default items-start gap-3">
+                    <div className="flex items-center gap-2 pt-1">
+                      <input
+                        id={checkboxId}
+                        name={checkboxId}
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => props.onToggleTodo(todo.id)}
+                        className="h-4 w-4 rounded border-white/20 bg-slate-950 text-sky-300"
+                      />
+                      <span
+                        className={[
+                          'h-2.5 w-2.5 shrink-0 rounded-full',
+                          todo.accentToken,
+                        ].join(' ')}
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p
+                        className={[
+                          'whitespace-pre-wrap break-words text-sm text-slate-100 transition-opacity [overflow-wrap:anywhere]',
+                          isChecked ? 'line-through opacity-50' : 'opacity-100',
+                        ].join(' ')}
+                      >
+                        {todo.title}
+                      </p>
+                    </div>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => props.onNavigateToSource(todo.displayRange)}
+                    className="shrink-0 pt-1 text-slate-500 transition-colors hover:text-sky-300"
+                    aria-label="노트에서 원문 보기"
+                  >
+                    <ArrowUpRight aria-hidden="true" className="h-3.5 w-3.5" strokeWidth={2} />
+                  </button>
+                </div>
               </li>
             );
           })}

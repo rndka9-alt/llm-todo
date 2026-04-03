@@ -21,6 +21,8 @@ export interface WorkspaceState {
   selectedBlockIds: string[];
   selectedTextRange: TextRange | null;
   focusNonce: number;
+  editorFocusRange: TextRange | null;
+  editorFocusNonce: number;
   checkedTodoIds: string[];
   lastUpdatedAt: number | null;
 }
@@ -39,6 +41,8 @@ export function createInitialWorkspaceState(now: number = Date.now()): Workspace
     selectedBlockIds: [],
     selectedTextRange: null,
     focusNonce: 0,
+    editorFocusRange: null,
+    editorFocusNonce: 0,
     checkedTodoIds: [],
     lastUpdatedAt: null,
   };
