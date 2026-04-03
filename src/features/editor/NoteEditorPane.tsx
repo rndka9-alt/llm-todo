@@ -268,7 +268,7 @@ export function NoteEditorPane(props: NoteEditorPaneProps) {
           />
 
           {props.analysisHighlights.length > 0 ? (
-            <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-20 overflow-hidden">
+            <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-20 overflow-hidden animate-pulse">
               <div
                 className={`${editorTextClassName} text-transparent`}
                 style={{

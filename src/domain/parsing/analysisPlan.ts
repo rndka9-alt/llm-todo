@@ -59,26 +59,6 @@ export function buildAnalysisHighlights(blocks: NoteBlock[], dirtyRegion: DirtyR
 
   const highlights: AnalysisHighlight[] = [];
 
-  if (dirtyRegion.kind === 'insert' && dirtyRegion.nextRange.start !== dirtyRegion.nextRange.end) {
-    for (const block of blocks) {
-      if (!rangesIntersect(block.range, dirtyRegion.nextRange)) {
-        continue;
-      }
-
-      highlights.push({
-        id: `${block.id}:analysis:new`,
-        blockId: block.id,
-        range: {
-          start: Math.max(block.range.start, dirtyRegion.nextRange.start),
-          end: Math.min(block.range.end, dirtyRegion.nextRange.end),
-        },
-        mode: 'new',
-      });
-    }
-
-    return highlights;
-  }
-
   for (const block of blocks) {
     if (block.parseStatus === 'queued' || block.parseStatus === 'parsing') {
       highlights.push({

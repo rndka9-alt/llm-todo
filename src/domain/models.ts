@@ -82,5 +82,5 @@ export interface AnalysisHighlight {
   id: string;
   blockId: string;
   range: TextRange;
-  mode: 'new' | 'updated';
+  mode: 'updated';
 }

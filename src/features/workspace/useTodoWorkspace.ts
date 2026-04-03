@@ -387,8 +387,7 @@ export function useTodoWorkspace(options: UseTodoWorkspaceOptions = {}) {
       noteText: nextText,
       blocks: nextBlocks,
       interpretations: nextInterpretations,
-      analysisHighlights: buildAnalysisHighlights(nextBlocks, dirtyRegion),
-      parseState: dirtyBlockIds.length > 0 ? 'parsing' : 'updated',
+      parseState: dirtyBlockIds.length > 0 ? 'parsing' : current.parseState,
     }));
 
     scheduleParse(state.noteTitle, nextBlocks, nextInterpretations, dirtyRegion, dirtyBlockIds);
