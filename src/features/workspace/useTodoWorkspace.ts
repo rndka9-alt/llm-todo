@@ -26,7 +26,7 @@ import {
   selectDirtyBlockIds,
 } from '../../domain/parsing/analysisPlan';
 import { projectTodoProjection } from '../../domain/todos/projectTodoProjection';
-import { createThrottleQueue } from '../../lib/createThrottleQueue';
+import { createDebounceQueue } from '../../lib/createDebounceQueue';
 import { createRange, rangeLength } from '../../lib/range';
 import { findBlockIdsForSelection, findTodoForSelection } from '../editor/selection';
 import { createPersistedSnapshot, restoreWorkspaceState } from './workspacePersistence';
@@ -118,14 +118,14 @@ export function useTodoWorkspace(options: UseTodoWorkspaceOptions = {}) {
   const onExtractionErrorRef = useRef(options.onExtractionError);
   const requestIdRef = useRef(0);
   const activeAbortControllerRef = useRef<AbortController | null>(null);
-  const parseThrottleRef = useRef(
-    createThrottleQueue<ScheduledParseRequest>(() => undefined, 300),
+  const parseDebounceRef = useRef(
+    createDebounceQueue<ScheduledParseRequest>(() => undefined, 300),
   );
   const saveTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
   const initialParseStartedRef = useRef(false);
 
   onExtractionErrorRef.current = options.onExtractionError;
-  parseThrottleRef.current.setCallback(executeParse);
+  parseDebounceRef.current.setCallback(executeParse);
 
   const projection = projectTodoProjection(state.blocks, state.interpretations);
 
@@ -267,7 +267,7 @@ export function useTodoWorkspace(options: UseTodoWorkspaceOptions = {}) {
       }));
     });
 
-    parseThrottleRef.current.schedule({
+    parseDebounceRef.current.schedule({
       noteTitle,
       blocks: queuedBlocks,
       interpretations,
@@ -345,7 +345,7 @@ export function useTodoWorkspace(options: UseTodoWorkspaceOptions = {}) {
 
   useEffect(() => {
     return () => {
-      parseThrottleRef.current.cancel();
+      parseDebounceRef.current.cancel();
       clearSaveTimer();
       activeAbortControllerRef.current?.abort();
       requestIdRef.current += 1;
@@ -413,7 +413,7 @@ export function useTodoWorkspace(options: UseTodoWorkspaceOptions = {}) {
       return;
     }
 
-    parseThrottleRef.current.cancel();
+    parseDebounceRef.current.cancel();
 
     executeParse({
       noteTitle: state.noteTitle,
