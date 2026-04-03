@@ -1,13 +1,5 @@
 import type { AnalysisHighlight, DirtyRegion, NoteBlock } from '../models';
-import { rangeContainsIndex, rangesIntersect } from '../../lib/range';
-
-function blockTouchesBoundary(block: NoteBlock, index: number): boolean {
-  if (rangeContainsIndex(block.range, index)) {
-    return true;
-  }
-
-  return block.range.end === index || block.range.start === index;
-}
+import { rangesIntersect } from '../../lib/range';
 
 export function selectDirtyBlockIds(blocks: NoteBlock[], dirtyRegion: DirtyRegion, now: number): string[] {
   if (dirtyRegion.kind === 'none') {
@@ -18,10 +10,9 @@ export function selectDirtyBlockIds(blocks: NoteBlock[], dirtyRegion: DirtyRegio
 
   for (const block of blocks) {
     const intersectsNextRange = rangesIntersect(block.range, dirtyRegion.nextRange);
-    const touchesBoundary = blockTouchesBoundary(block, dirtyRegion.nextRange.start);
     const wasUpdatedNow = block.updatedAt === now;
 
-    if (intersectsNextRange || touchesBoundary || wasUpdatedNow) {
+    if (intersectsNextRange || wasUpdatedNow) {
       dirtyIds.push(block.id);
     }
   }
