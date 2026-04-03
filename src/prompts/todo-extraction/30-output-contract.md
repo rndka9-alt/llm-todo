@@ -29,4 +29,5 @@ Rules:
 - `blockId` must exactly match the target block id.
 - `hasActionableTodo` must be `false` when `todos` is empty.
 - `todos` must be an empty array when no actionable TODO exists.
+- Every `title` must be written in natural Korean.
 - Every required field must be present.

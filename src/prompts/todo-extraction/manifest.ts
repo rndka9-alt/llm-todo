@@ -1,4 +1,4 @@
-export const todoExtractionPromptVersion = 'todo-extraction.v1';
+export const todoExtractionPromptVersion = 'todo-extraction.v2';
 
 export const todoExtractionPromptManifest = [
   '00-role.md',

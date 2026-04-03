@@ -33,7 +33,7 @@ describe('MockTodoExtractionAdapter', () => {
       start: 0,
       end: 27,
     });
-    expect(output.traces[0]?.promptVersion).toBe('todo-extraction.v1');
+    expect(output.traces[0]?.promptVersion).toBe('todo-extraction.v2');
   });
 
   it('returns deterministic traces and results for the same input', async () => {

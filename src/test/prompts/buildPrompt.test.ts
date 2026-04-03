@@ -46,4 +46,13 @@ describe('buildTodoExtractionPrompt', () => {
     expect(prompt).toContain(runtimeInput.optionalHintsJson);
     expect(prompt).not.toContain('{{TARGET_BLOCK_JSON}}');
   });
+
+  it('includes the Korean TODO title instruction', () => {
+    const prompt = buildTodoExtractionPrompt(runtimeInput);
+
+    expect(prompt).toContain('Every `title` must be written in natural Korean.');
+    expect(prompt).toContain(
+      'Always write normalized TODO `title` values in natural Korean, even when the source block is written in English or mixed language.',
+    );
+  });
 });
