@@ -29,6 +29,10 @@ describe('MockTodoExtractionAdapter', () => {
       'email Mina by Friday',
     ]);
     expect(output.results[0]?.hasActionableTodo).toBe(true);
+    expect(output.results[0]?.todos[0]?.sourceAnchors[0]?.range).toEqual({
+      start: 0,
+      end: 27,
+    });
     expect(output.traces[0]?.promptVersion).toBe('todo-extraction.v1');
   });
 

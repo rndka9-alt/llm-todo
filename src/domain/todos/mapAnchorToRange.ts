@@ -1,4 +1,15 @@
-import type { TextRange, TodoAnchor } from '../models';
+import type {
+  TextRange,
+  TodoAnchorReference,
+  TodoSourceAnchor,
+} from '../models';
+
+function createRange(start: number, end: number): TextRange {
+  return {
+    start,
+    end,
+  };
+}
 
 function findAllOccurrences(text: string, quote: string): number[] {
   const indexes: number[] = [];
@@ -17,7 +28,7 @@ function findAllOccurrences(text: string, quote: string): number[] {
   return indexes;
 }
 
-export function mapAnchorToRange(text: string, anchor: TodoAnchor): TextRange | null {
+function mapAnchorReferenceToRange(text: string, anchor: TodoAnchorReference): TextRange | null {
   const occurrences = findAllOccurrences(text, anchor.quote);
   const index = occurrences[anchor.occurrence] ?? occurrences[0];
 
@@ -25,8 +36,51 @@ export function mapAnchorToRange(text: string, anchor: TodoAnchor): TextRange | 
     return null;
   }
 
-  return {
-    start: index,
-    end: index + anchor.quote.length,
-  };
+  return createRange(index, index + anchor.quote.length);
+}
+
+export function resolveSourceAnchors(
+  text: string,
+  anchors: TodoAnchorReference[],
+): TodoSourceAnchor[] {
+  const usageMap = new Map<string, number>();
+  const resolvedAnchors: TodoSourceAnchor[] = [];
+
+  for (const anchor of anchors) {
+    const occurrences = findAllOccurrences(text, anchor.quote);
+
+    if (occurrences.length === 0) {
+      continue;
+    }
+
+    let occurrence = anchor.occurrence;
+
+    if (occurrences.length === 1) {
+      occurrence = 0;
+    } else if (anchor.occurrence === 0) {
+      occurrence = usageMap.get(anchor.quote) ?? 0;
+    }
+
+    const clampedOccurrence = Math.min(occurrence, occurrences.length - 1);
+    const range = mapAnchorReferenceToRange(text, {
+      quote: anchor.quote,
+      occurrence: clampedOccurrence,
+    });
+
+    if (range === null) {
+      continue;
+    }
+
+    if (occurrences.length > 1) {
+      usageMap.set(anchor.quote, clampedOccurrence + 1);
+    }
+
+    resolvedAnchors.push({
+      quote: anchor.quote,
+      occurrence: clampedOccurrence,
+      range,
+    });
+  }
+
+  return resolvedAnchors;
 }

@@ -1,10 +1,16 @@
 import type {
   BlockInterpretation,
+  ExtractedTodoDraft,
   NoteBlock,
   ParseStatus,
+  Priority,
+  Effort,
+  TodoAnchorReference,
+  TodoSourceAnchor,
 } from '../../domain/models';
 import { reconcileBlocks } from '../../domain/note/reconcileBlocks';
 import { segmentNote } from '../../domain/note/segmentNote';
+import { resolveSourceAnchors } from '../../domain/todos/mapAnchorToRange';
 import type { WorkspaceState } from './workspaceState';
 
 export interface PersistedWorkspaceSnapshot {
@@ -38,15 +44,98 @@ function normalizeBlocks(blocks: NoteBlock[]): NoteBlock[] {
   }));
 }
 
-function normalizeInterpretations(interpretations: BlockInterpretation[]): BlockInterpretation[] {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function isPriority(value: unknown): value is Priority {
+  return value === 'low' || value === 'medium' || value === 'high';
+}
+
+function isEffort(value: unknown): value is Effort {
+  return value === 'low' || value === 'medium' || value === 'high';
+}
+
+function normalizeSourceAnchors(value: unknown, blockText: string): TodoSourceAnchor[] {
+  if (Array.isArray(value)) {
+    const anchorReferences: TodoAnchorReference[] = value.flatMap((anchor) => {
+      if (!isRecord(anchor) || typeof anchor.quote !== 'string') {
+        return [];
+      }
+
+      const occurrence = typeof anchor.occurrence === 'number' ? anchor.occurrence : 0;
+
+      return [
+        {
+          quote: anchor.quote,
+          occurrence,
+        },
+      ];
+    });
+
+    return resolveSourceAnchors(blockText, anchorReferences);
+  }
+
+  if (isRecord(value) && typeof value.quote === 'string') {
+    return resolveSourceAnchors(blockText, [
+      {
+        quote: value.quote,
+        occurrence: typeof value.occurrence === 'number' ? value.occurrence : 0,
+      },
+    ]);
+  }
+
+  return [];
+}
+
+function readLegacySourceAnchor(value: unknown): unknown {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  return value.sourceAnchor;
+}
+
+function normalizeInterpretations(
+  interpretations: BlockInterpretation[],
+  blocks: NoteBlock[],
+): BlockInterpretation[] {
+  const blockTextMap = new Map(blocks.map((block) => [block.id, block.text]));
+
   return interpretations.map((interpretation) => ({
-    ...interpretation,
+    blockId: interpretation.blockId,
     hasActionableTodo: interpretation.hasActionableTodo ?? interpretation.todos.length > 0,
-    todos: interpretation.todos.map((todo) => ({
-      ...todo,
-      tags: todo.tags ?? [],
-      ambiguities: todo.ambiguities ?? [],
-    })),
+    todos: interpretation.todos.map((todo) => {
+      const blockText = blockTextMap.get(interpretation.blockId) ?? '';
+      const normalizedTodo: ExtractedTodoDraft = {
+        localId: todo.localId,
+        title: todo.title,
+        sourceAnchors: normalizeSourceAnchors(
+          todo.sourceAnchors ?? readLegacySourceAnchor(todo),
+          blockText,
+        ),
+        tags: todo.tags ?? [],
+        ambiguities: todo.ambiguities ?? [],
+      };
+
+      if (typeof todo.depth === 'number') {
+        normalizedTodo.depth = todo.depth;
+      }
+
+      if (isPriority(todo.priority)) {
+        normalizedTodo.priority = todo.priority;
+      }
+
+      if (typeof todo.dueDate === 'string') {
+        normalizedTodo.dueDate = todo.dueDate;
+      }
+
+      if (isEffort(todo.effort)) {
+        normalizedTodo.effort = todo.effort;
+      }
+
+      return normalizedTodo;
+    }),
   }));
 }
 
@@ -62,7 +151,7 @@ export function createPersistedSnapshot(
     noteTitle: state.noteTitle,
     noteText: state.noteText,
     blocks: normalizeBlocks(state.blocks),
-    interpretations: normalizeInterpretations(interpretations),
+    interpretations: normalizeInterpretations(interpretations, state.blocks),
     checkedTodoIds: state.checkedTodoIds,
     lastUpdatedAt: state.lastUpdatedAt,
     savedAt,
@@ -114,7 +203,7 @@ export function restoreWorkspaceState(
     noteTitle: snapshot.noteTitle,
     noteText: snapshot.noteText,
     blocks,
-    interpretations: normalizeInterpretations(snapshot.interpretations),
+    interpretations: normalizeInterpretations(snapshot.interpretations, blocks),
     analysisHighlights: [],
     parseState: hasInterpretations ? 'updated' : 'idle',
     activeTodoId: null,

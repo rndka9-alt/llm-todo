@@ -15,7 +15,7 @@ describe('todo guards', () => {
         todos: [
           {
             title: 'ship docs',
-            sourceQuote: 'Need to ship docs tomorrow.',
+            sourceQuotes: ['Need to ship docs tomorrow.'],
             depth: 0,
             metadata: {
               priority: 'high',

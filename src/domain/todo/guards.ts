@@ -55,7 +55,7 @@ export function isLlmTodoItem(value: unknown): value is LlmTodoItem {
 
   return (
     typeof value.title === 'string' &&
-    typeof value.sourceQuote === 'string' &&
+    isStringArray(value.sourceQuotes) &&
     typeof value.depth === 'number' &&
     isLlmTodoMetadata(value.metadata)
   );

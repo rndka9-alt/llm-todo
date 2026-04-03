@@ -6,7 +6,6 @@ import type {
 } from '../models';
 import { slugify } from '../../lib/id';
 import { offsetRange } from '../../lib/range';
-import { mapAnchorToRange } from './mapAnchorToRange';
 
 const colorPalette = [
   {
@@ -68,9 +67,11 @@ export function projectTodoProjection(blocks: NoteBlock[], interpretations: Bloc
     }
 
     interpretation.todos.forEach((todo, todoIndex) => {
-      const localRange = mapAnchorToRange(block.text, todo.sourceAnchor);
+      const localRanges = todo.sourceAnchors
+        .map((anchor) => anchor.range)
+        .sort((left, right) => left.start - right.start);
 
-      if (localRange === null) {
+      if (localRanges.length === 0) {
         return;
       }
 
@@ -81,16 +82,23 @@ export function projectTodoProjection(blocks: NoteBlock[], interpretations: Bloc
         return;
       }
 
-      const displayRange = offsetRange(localRange, block.range.start);
+      const displayRanges = localRanges.map((range) => offsetRange(range, block.range.start));
+      const primaryDisplayRange = displayRanges[0];
+
+      if (typeof primaryDisplayRange === 'undefined') {
+        return;
+      }
 
       const projectionItem: TodoProjectionItem = {
         id,
         blockId: block.id,
         title: todo.title,
         tags: todo.tags ?? [],
-        sourceAnchor: todo.sourceAnchor,
-        sourceQuote: todo.sourceAnchor.quote,
-        displayRange,
+        sourceAnchors: todo.sourceAnchors,
+        sourceQuotes: todo.sourceAnchors.map((anchor) => anchor.quote),
+        sourceQuote: todo.sourceAnchors[0]?.quote ?? todo.title,
+        displayRange: primaryDisplayRange,
+        displayRanges,
         colorToken: paletteEntry.highlight,
         accentToken: paletteEntry.accent,
         orderKey: blockIndex * 100 + todoIndex,
@@ -107,13 +115,15 @@ export function projectTodoProjection(blocks: NoteBlock[], interpretations: Bloc
 
       todos.push(projectionItem);
 
-      highlights.push({
-        id: `${id}:highlight`,
-        todoId: id,
-        blockId: block.id,
-        range: displayRange,
-        colorToken: paletteEntry.highlight,
-        accentToken: paletteEntry.accent,
+      displayRanges.forEach((displayRange, rangeIndex) => {
+        highlights.push({
+          id: `${id}:highlight:${rangeIndex}`,
+          todoId: id,
+          blockId: block.id,
+          range: displayRange,
+          colorToken: paletteEntry.highlight,
+          accentToken: paletteEntry.accent,
+        });
       });
     });
   });

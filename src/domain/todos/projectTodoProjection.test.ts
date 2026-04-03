@@ -25,18 +25,30 @@ const interpretations: BlockInterpretation[] = [
       {
         localId: 'ship-docs',
         title: 'ship docs',
-        sourceAnchor: {
-          quote: 'Need to ship docs',
-          occurrence: 0,
-        },
+        sourceAnchors: [
+          {
+            quote: 'Need to ship docs',
+            occurrence: 0,
+            range: {
+              start: 0,
+              end: 17,
+            },
+          },
+        ],
       },
       {
         localId: 'email-mina',
         title: 'email Mina',
-        sourceAnchor: {
-          quote: 'Need to email Mina',
-          occurrence: 0,
-        },
+        sourceAnchors: [
+          {
+            quote: 'Need to email Mina',
+            occurrence: 0,
+            range: {
+              start: 18,
+              end: 36,
+            },
+          },
+        ],
       },
     ],
   },
@@ -57,5 +69,50 @@ describe('projectTodoProjection', () => {
         end: 36,
       },
     ]);
+  });
+
+  it('creates multiple display ranges for one todo when it has multiple anchors', () => {
+    const projection = projectTodoProjection(blocks, [
+      {
+        blockId: 'one',
+        hasActionableTodo: true,
+        todos: [
+          {
+            localId: 'ship-and-email',
+            title: 'ship docs and email Mina',
+            sourceAnchors: [
+              {
+                quote: 'Need to ship docs',
+                occurrence: 0,
+                range: {
+                  start: 0,
+                  end: 17,
+                },
+              },
+              {
+                quote: 'Need to email Mina',
+                occurrence: 0,
+                range: {
+                  start: 18,
+                  end: 36,
+                },
+              },
+            ],
+          },
+        ],
+      },
+    ]);
+
+    expect(projection.todos[0]?.displayRanges).toEqual([
+      {
+        start: 0,
+        end: 17,
+      },
+      {
+        start: 18,
+        end: 36,
+      },
+    ]);
+    expect(projection.highlights).toHaveLength(2);
   });
 });

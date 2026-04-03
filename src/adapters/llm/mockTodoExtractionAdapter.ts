@@ -3,6 +3,7 @@ import type {
   Effort,
   ExtractedTodoDraft,
   NoteBlock,
+  TodoAnchorReference,
   Priority,
 } from '../../domain/models';
 import { isLlmBlockResultArray } from '../../domain/todo/guards';
@@ -10,6 +11,7 @@ import type { LlmBlockResult } from '../../domain/todo/types';
 import { slugify } from '../../lib/id';
 import { buildTodoExtractionPrompt } from '../../prompts/todo-extraction/buildPrompt';
 import { todoExtractionPromptVersion } from '../../prompts/todo-extraction/manifest';
+import { resolveSourceAnchors } from '../../domain/todos/mapAnchorToRange';
 import type { TodoExtractionAdapter } from './todoExtractionAdapter';
 import type {
   TodoExtractionAdapterInput,
@@ -185,7 +187,7 @@ function extractLlmBlockResult(block: NoteBlock): LlmBlockResult {
   const todos = lines.flatMap((line) =>
     parseLineCandidates(line).map((candidate) => ({
       title: candidate.title,
-      sourceQuote: candidate.raw,
+      sourceQuotes: [candidate.raw],
       depth: candidate.depth,
       metadata: {
         priority: extractPriority(candidate.raw),
@@ -204,17 +206,18 @@ function extractLlmBlockResult(block: NoteBlock): LlmBlockResult {
   };
 }
 
-function mapTodoDraft(blockId: string, todo: LlmBlockResult['todos'][number]): ExtractedTodoDraft {
+function mapTodoDraft(
+  blockId: string,
+  todo: LlmBlockResult['todos'][number],
+  sourceAnchors: ExtractedTodoDraft['sourceAnchors'],
+): ExtractedTodoDraft {
   const draft: ExtractedTodoDraft = {
     localId: `${blockId}-${slugify(todo.title)}`,
     title: todo.title,
     depth: todo.depth,
     tags: todo.metadata.tags,
     ambiguities: todo.metadata.ambiguities,
-    sourceAnchor: {
-      quote: todo.sourceQuote,
-      occurrence: 0,
-    },
+    sourceAnchors,
   };
 
   if (todo.metadata.priority !== null) {
@@ -233,24 +236,42 @@ function mapTodoDraft(blockId: string, todo: LlmBlockResult['todos'][number]): E
 }
 
 function mapBlockInterpretation(result: LlmBlockResult): BlockInterpretation {
-  const occurrenceMap = new Map<string, number>();
-
   return {
     blockId: result.blockId,
     hasActionableTodo: result.hasActionableTodo,
-    todos: result.todos.map((todo) => {
-      const occurrence = occurrenceMap.get(todo.sourceQuote) ?? 0;
-      occurrenceMap.set(todo.sourceQuote, occurrence + 1);
-
-      return {
-        ...mapTodoDraft(result.blockId, todo),
-        sourceAnchor: {
-          quote: todo.sourceQuote,
-          occurrence,
-        },
-      };
-    }),
+    todos: [],
   };
+}
+
+function mapBlockInterpretationWithResolvedAnchors(
+  block: NoteBlock,
+  result: LlmBlockResult,
+): BlockInterpretation {
+  const interpretation = mapBlockInterpretation(result);
+  const quoteUsageMap = new Map<string, number>();
+
+  interpretation.todos = result.todos.map((todo) => {
+    const anchorReferences: TodoAnchorReference[] = todo.sourceQuotes.map((quote) => ({
+      quote,
+      occurrence: quoteUsageMap.get(quote) ?? 0,
+    }));
+    const sourceAnchors = resolveSourceAnchors(block.text, anchorReferences);
+
+    sourceAnchors.forEach((anchor) => {
+      const nextOccurrence = anchor.occurrence + 1;
+      const current = quoteUsageMap.get(anchor.quote) ?? 0;
+
+      if (nextOccurrence > current) {
+        quoteUsageMap.set(anchor.quote, nextOccurrence);
+      }
+    });
+
+    return mapTodoDraft(result.blockId, todo, sourceAnchors);
+  });
+
+  interpretation.hasActionableTodo = interpretation.todos.length > 0;
+
+  return interpretation;
 }
 
 function partitionContextBlocks(
@@ -328,7 +349,7 @@ export class MockTodoExtractionAdapter implements TodoExtractionAdapter {
         continue;
       }
 
-      results.push(mapBlockInterpretation(result));
+      results.push(mapBlockInterpretationWithResolvedAnchors(block, result));
     }
 
     return {

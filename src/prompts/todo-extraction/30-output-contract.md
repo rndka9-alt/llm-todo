@@ -10,7 +10,7 @@ Each array item must match this schema:
   "todos": [
     {
       "title": "string",
-      "sourceQuote": "string",
+      "sourceQuotes": ["string"],
       "depth": 0,
       "metadata": {
         "priority": "low | medium | high | null",

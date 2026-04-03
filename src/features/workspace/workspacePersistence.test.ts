@@ -43,4 +43,40 @@ describe('workspacePersistence', () => {
     expect(restored.focusNonce).toBe(0);
     expect(restored.parseState).toBe('updated');
   });
+
+  it('upgrades legacy single-anchor todos into positioned multi-anchor records', () => {
+    const state = createInitialWorkspaceState(10);
+    const snapshot = JSON.parse(JSON.stringify(createPersistedSnapshot(state, 20)));
+    const targetBlock = state.blocks.find((block) => block.text.includes('Fix the mobile settings bug'));
+
+    snapshot.interpretations = [
+      {
+        blockId: targetBlock?.id ?? 'missing',
+        hasActionableTodo: true,
+        todos: [
+          {
+            localId: 'legacy-todo',
+            title: 'fix mobile settings bug',
+            sourceAnchor: {
+              quote: 'Fix the mobile settings bug',
+              occurrence: 0,
+            },
+          },
+        ],
+      },
+    ];
+
+    const restored = restoreWorkspaceState(snapshot, 30);
+
+    expect(restored.interpretations[0]?.todos[0]?.sourceAnchors).toEqual([
+      {
+        quote: 'Fix the mobile settings bug',
+        occurrence: 0,
+        range: {
+          start: 14,
+          end: 41,
+        },
+      },
+    ]);
+  });
 });

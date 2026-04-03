@@ -24,9 +24,13 @@ export interface DirtyRegion {
   nextRange: TextRange;
 }
 
-export interface TodoAnchor {
+export interface TodoAnchorReference {
   quote: string;
   occurrence: number;
+}
+
+export interface TodoSourceAnchor extends TodoAnchorReference {
+  range: TextRange;
 }
 
 export interface ExtractedTodoDraft {
@@ -38,7 +42,7 @@ export interface ExtractedTodoDraft {
   tags?: string[];
   effort?: Effort;
   ambiguities?: string[];
-  sourceAnchor: TodoAnchor;
+  sourceAnchors: TodoSourceAnchor[];
 }
 
 export interface BlockInterpretation {
@@ -55,9 +59,11 @@ export interface TodoProjectionItem {
   priority?: Priority;
   dueDate?: string;
   tags: string[];
-  sourceAnchor: TodoAnchor;
+  sourceAnchors: TodoSourceAnchor[];
+  sourceQuotes: string[];
   sourceQuote: string;
   displayRange: TextRange;
+  displayRanges: TextRange[];
   colorToken: string;
   accentToken: string;
   orderKey: number;

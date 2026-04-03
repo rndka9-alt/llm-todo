@@ -11,7 +11,7 @@ export interface LlmTodoMetadata {
 
 export interface LlmTodoItem {
   title: string;
-  sourceQuote: string;
+  sourceQuotes: string[];
   depth: number;
   metadata: LlmTodoMetadata;
 }
