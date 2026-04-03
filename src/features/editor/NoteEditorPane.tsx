@@ -23,9 +23,17 @@ export function NoteEditorPane(props: NoteEditorPaneProps) {
   const selectionMarkerRef = useRef<HTMLSpanElement | null>(null);
   const editorFieldId = 'note-editor-input';
   const editorFieldName = 'noteText';
+  const visibleDisplayHighlights = props.displayHighlights.filter(
+    (dh) => !props.analysisHighlights.some((ah) => dh.range.start < ah.range.end && ah.range.start < dh.range.end),
+  );
   const decoratedSegments = buildDecoratedText(
     props.noteText,
-    props.displayHighlights,
+    visibleDisplayHighlights,
+    [],
+  );
+  const analysisOverlaySegments = buildDecoratedText(
+    props.noteText,
+    [],
     props.analysisHighlights,
   );
   const editorTextClassName =
@@ -236,6 +244,24 @@ export function NoteEditorPane(props: NoteEditorPaneProps) {
             spellCheck={false}
             className={`scrollbar-hidden relative z-10 h-full w-full resize-none bg-transparent ${editorTextClassName} text-slate-100 outline-none caret-sky-300`}
           />
+
+          {props.analysisHighlights.length > 0 ? (
+            <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-20 overflow-hidden">
+              <div
+                className={`${editorTextClassName} text-transparent`}
+                style={{
+                  transform: `translate(${-scrollLeft}px, ${-scrollTop}px)`,
+                  width: mirrorWidth === null ? undefined : `${mirrorWidth}px`,
+                }}
+              >
+                {analysisOverlaySegments.map((segment) => (
+                  <span key={segment.key} className={segment.className}>
+                    {segment.text}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
     </section>

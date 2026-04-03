@@ -13,8 +13,8 @@ function pickSegmentClass(
 ): string {
   if (analysisHighlight) {
     return analysisHighlight.mode === 'new'
-      ? 'rounded bg-slate-400/25 animate-pulse'
-      : 'rounded bg-slate-500/20 animate-pulse';
+      ? 'rounded bg-slate-400/50 animate-pulse'
+      : 'rounded bg-slate-500/40 animate-pulse';
   }
 
   if (displayHighlight) {
