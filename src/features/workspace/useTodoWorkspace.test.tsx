@@ -20,6 +20,7 @@ function createSnapshot(): PersistedWorkspaceSnapshot {
       interpretations: [
         {
           blockId: firstBlock.id,
+          hasActionableTodo: false,
           todos: [],
         },
       ],

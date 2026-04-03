@@ -29,6 +29,7 @@ describe('workspacePersistence', () => {
       interpretations: [
         {
           blockId: state.blocks[0]?.id ?? 'missing',
+          hasActionableTodo: false,
           todos: [],
         },
       ],

@@ -1,6 +1,6 @@
 import { startTransition, useEffect, useRef, useState } from 'react';
 import { indexedDbWorkspaceSnapshotRepository } from '../../adapters/indexedDbWorkspaceSnapshotRepository';
-import { MockTodoExtractionAdapter } from '../../adapters/mockTodoExtractionAdapter';
+import { MockTodoExtractionAdapter } from '../../adapters/llm/mockTodoExtractionAdapter';
 import type {
   BlockInterpretation,
   DirtyRegion,
@@ -127,7 +127,7 @@ export function useTodoWorkspace(
           window.setTimeout(() => resolve(), 220);
         });
 
-        const output = await adapterRef.current.interpret({
+        const output = await adapterRef.current.extract({
           noteTitle,
           focusBlocks,
           contextBlocks,

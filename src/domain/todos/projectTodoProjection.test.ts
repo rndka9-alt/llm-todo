@@ -20,6 +20,7 @@ const blocks: NoteBlock[] = [
 const interpretations: BlockInterpretation[] = [
   {
     blockId: 'one',
+    hasActionableTodo: true,
     todos: [
       {
         localId: 'ship-docs',

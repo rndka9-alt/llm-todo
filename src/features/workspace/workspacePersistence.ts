@@ -38,6 +38,18 @@ function normalizeBlocks(blocks: NoteBlock[]): NoteBlock[] {
   }));
 }
 
+function normalizeInterpretations(interpretations: BlockInterpretation[]): BlockInterpretation[] {
+  return interpretations.map((interpretation) => ({
+    ...interpretation,
+    hasActionableTodo: interpretation.hasActionableTodo ?? interpretation.todos.length > 0,
+    todos: interpretation.todos.map((todo) => ({
+      ...todo,
+      tags: todo.tags ?? [],
+      ambiguities: todo.ambiguities ?? [],
+    })),
+  }));
+}
+
 export function createPersistedSnapshot(
   state: WorkspaceState,
   savedAt: number = Date.now(),
@@ -50,7 +62,7 @@ export function createPersistedSnapshot(
     noteTitle: state.noteTitle,
     noteText: state.noteText,
     blocks: normalizeBlocks(state.blocks),
-    interpretations,
+    interpretations: normalizeInterpretations(interpretations),
     checkedTodoIds: state.checkedTodoIds,
     lastUpdatedAt: state.lastUpdatedAt,
     savedAt,
@@ -102,7 +114,7 @@ export function restoreWorkspaceState(
     noteTitle: snapshot.noteTitle,
     noteText: snapshot.noteText,
     blocks,
-    interpretations: snapshot.interpretations,
+    interpretations: normalizeInterpretations(snapshot.interpretations),
     analysisHighlights: [],
     parseState: hasInterpretations ? 'updated' : 'idle',
     activeTodoId: null,

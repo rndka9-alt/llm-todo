@@ -1,6 +1,7 @@
 export type ParseStatus = 'idle' | 'queued' | 'parsing' | 'updated' | 'error';
 
 export type Priority = 'low' | 'medium' | 'high';
+export type Effort = 'low' | 'medium' | 'high';
 
 export interface TextRange {
   start: number;
@@ -35,23 +36,15 @@ export interface ExtractedTodoDraft {
   priority?: Priority;
   dueDate?: string;
   tags?: string[];
+  effort?: Effort;
+  ambiguities?: string[];
   sourceAnchor: TodoAnchor;
 }
 
 export interface BlockInterpretation {
   blockId: string;
+  hasActionableTodo: boolean;
   todos: ExtractedTodoDraft[];
-}
-
-export interface AdapterInput {
-  noteTitle: string;
-  focusBlocks: NoteBlock[];
-  contextBlocks: NoteBlock[];
-  requestedAt: number;
-}
-
-export interface AdapterOutput {
-  results: BlockInterpretation[];
 }
 
 export interface TodoProjectionItem {

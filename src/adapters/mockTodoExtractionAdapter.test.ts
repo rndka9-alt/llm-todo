@@ -4,7 +4,7 @@ import { MockTodoExtractionAdapter } from './mockTodoExtractionAdapter';
 describe('MockTodoExtractionAdapter', () => {
   it('extracts multiple actionable sentences from one block', async () => {
     const adapter = new MockTodoExtractionAdapter();
-    const output = await adapter.interpret({
+    const output = await adapter.extract({
       noteTitle: 'Test',
       requestedAt: 1,
       contextBlocks: [],
@@ -28,5 +28,35 @@ describe('MockTodoExtractionAdapter', () => {
       'ship docs tomorrow',
       'email Mina by Friday',
     ]);
+    expect(output.results[0]?.hasActionableTodo).toBe(true);
+    expect(output.traces[0]?.promptVersion).toBe('todo-extraction.v1');
+  });
+
+  it('returns deterministic traces and results for the same input', async () => {
+    const adapter = new MockTodoExtractionAdapter();
+    const input = {
+      noteTitle: 'Test',
+      requestedAt: 1712123456789,
+      contextBlocks: [],
+      focusBlocks: [
+        {
+          id: 'block-1',
+          text: '- Fix checkout bug #frontend',
+          range: {
+            start: 0,
+            end: 28,
+          },
+          createdAt: 1,
+          updatedAt: 1,
+          lastParsedAt: null,
+          parseStatus: 'idle' as const,
+        },
+      ],
+    };
+
+    const first = await adapter.extract(input);
+    const second = await adapter.extract(input);
+
+    expect(second).toEqual(first);
   });
 });
