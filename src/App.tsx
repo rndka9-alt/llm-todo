@@ -48,24 +48,26 @@ export default function App() {
           </div>
         </header>
 
-        <main className="grid flex-1 gap-4 xl:grid-cols-[minmax(20rem,0.9fr)_minmax(28rem,1.4fr)]">
-          <TodoListPane
-            todos={workspace.todos}
-            activeTodoId={workspace.activeTodoId}
-            focusNonce={workspace.focusNonce}
-            checkedTodoIds={workspace.checkedTodoIds}
-            onToggleTodo={workspace.toggleTodo}
-          />
+        <div className="flex-1 overflow-x-auto pb-1">
+          <main className="grid min-h-full min-w-[60rem] grid-cols-[minmax(20rem,0.9fr)_minmax(32rem,1.4fr)] gap-4">
+            <TodoListPane
+              todos={workspace.todos}
+              activeTodoId={workspace.activeTodoId}
+              focusNonce={workspace.focusNonce}
+              checkedTodoIds={workspace.checkedTodoIds}
+              onToggleTodo={workspace.toggleTodo}
+            />
 
-          <NoteEditorPane
-            noteText={workspace.noteText}
-            blocks={workspace.blocks}
-            displayHighlights={workspace.displayHighlights}
-            analysisHighlights={workspace.analysisHighlights}
-            onTextChange={workspace.setNoteText}
-            onSelectionChange={workspace.updateSelection}
-          />
-        </main>
+            <NoteEditorPane
+              noteText={workspace.noteText}
+              blocks={workspace.blocks}
+              displayHighlights={workspace.displayHighlights}
+              analysisHighlights={workspace.analysisHighlights}
+              onTextChange={workspace.setNoteText}
+              onSelectionChange={workspace.updateSelection}
+            />
+          </main>
+        </div>
       </div>
     </div>
   );
