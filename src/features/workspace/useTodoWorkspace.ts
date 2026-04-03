@@ -118,8 +118,9 @@ export function useTodoWorkspace(options: UseTodoWorkspaceOptions = {}) {
   const onExtractionErrorRef = useRef(options.onExtractionError);
   const requestIdRef = useRef(0);
   const activeAbortControllerRef = useRef<AbortController | null>(null);
+  const parsingBlockIdsRef = useRef<string[]>([]);
   const parseDebounceRef = useRef(
-    createDebounceQueue<ScheduledParseRequest>(() => undefined, 300),
+    createDebounceQueue<ScheduledParseRequest>(() => undefined, 1000),
   );
   const saveTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
   const initialParseStartedRef = useRef(false);
@@ -157,6 +158,7 @@ export function useTodoWorkspace(options: UseTodoWorkspaceOptions = {}) {
     const contextBlocks = getContextBlocks(parsingBlocks, payload.focusBlockIds, 1);
 
     activeAbortControllerRef.current = abortController;
+    parsingBlockIdsRef.current = payload.focusBlockIds;
 
     startTransition(() => {
       setState((current) => ({
@@ -188,6 +190,7 @@ export function useTodoWorkspace(options: UseTodoWorkspaceOptions = {}) {
 
           if (activeAbortControllerRef.current === abortController) {
             activeAbortControllerRef.current = null;
+            parsingBlockIdsRef.current = [];
           }
 
           const parsedAt = Date.now();
@@ -217,6 +220,7 @@ export function useTodoWorkspace(options: UseTodoWorkspaceOptions = {}) {
         onError: (error, variables) => {
           if (activeAbortControllerRef.current === abortController) {
             activeAbortControllerRef.current = null;
+            parsingBlockIdsRef.current = [];
           }
 
           const message = getExtractionErrorMessage(error);
@@ -252,6 +256,15 @@ export function useTodoWorkspace(options: UseTodoWorkspaceOptions = {}) {
   ) {
     if (focusBlockIds.length === 0) {
       return;
+    }
+
+    const hasOverlap = parsingBlockIdsRef.current.some((id) => focusBlockIds.includes(id));
+
+    if (hasOverlap && activeAbortControllerRef.current !== null) {
+      activeAbortControllerRef.current.abort();
+      activeAbortControllerRef.current = null;
+      parsingBlockIdsRef.current = [];
+      requestIdRef.current += 1;
     }
 
     const queuedBlocks = markBlockStatuses(blocks, focusBlockIds, 'queued');
@@ -348,6 +361,7 @@ export function useTodoWorkspace(options: UseTodoWorkspaceOptions = {}) {
       parseDebounceRef.current.cancel();
       clearSaveTimer();
       activeAbortControllerRef.current?.abort();
+      parsingBlockIdsRef.current = [];
       requestIdRef.current += 1;
     };
   }, []);
