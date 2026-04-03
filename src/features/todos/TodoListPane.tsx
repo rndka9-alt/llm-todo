@@ -9,22 +9,6 @@ interface TodoListPaneProps {
   onToggleTodo: (todoId: string) => void;
 }
 
-function renderPriority(priority: TodoProjectionItem['priority']): string | null {
-  if (priority === 'high') {
-    return 'high';
-  }
-
-  if (priority === 'medium') {
-    return 'medium';
-  }
-
-  if (priority === 'low') {
-    return 'low';
-  }
-
-  return null;
-}
-
 export function TodoListPane(props: TodoListPaneProps) {
   const itemRefs = useRef(new Map<string, HTMLLIElement>());
   const timeoutRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
@@ -62,14 +46,14 @@ export function TodoListPane(props: TodoListPaneProps) {
   }, [props.activeTodoId, props.focusNonce]);
 
   return (
-    <section className="flex h-full min-h-0 flex-col rounded-[28px] border border-white/10 bg-slate-900/65 shadow-[0_24px_80px_rgba(2,6,23,0.45)] backdrop-blur">
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
-        <ol className="space-y-2">
+    <section className="flex h-full min-h-0 flex-col">
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <ol className="space-y-2 px-4 py-4">
           {props.todos.map((todo) => {
             const isChecked = props.checkedTodoIds.includes(todo.id);
             const isActive = props.activeTodoId === todo.id;
             const isFlashed = flashedTodoId === todo.id;
-            const priority = renderPriority(todo.priority);
+            const checkboxId = `todo-checkbox-${todo.id}`;
 
             return (
               <li
@@ -82,10 +66,10 @@ export function TodoListPane(props: TodoListPaneProps) {
                   }
                 }}
                 className={[
-                  'rounded-2xl border px-3 py-3 transition-all duration-700',
+                  'rounded-2xl transition-all duration-700',
                   isActive || isFlashed
-                    ? 'border-sky-300/60 bg-sky-200/12 shadow-[0_0_0_1px_rgba(125,211,252,0.2)]'
-                    : 'border-white/8 bg-white/[0.03]',
+                    ? 'bg-sky-200/10'
+                    : 'bg-transparent',
                 ].join(' ')}
                 style={{
                   marginLeft: `${todo.depth * 14}px`,
@@ -93,6 +77,8 @@ export function TodoListPane(props: TodoListPaneProps) {
               >
                 <label className="flex cursor-default items-start gap-3">
                   <input
+                    id={checkboxId}
+                    name={checkboxId}
                     type="checkbox"
                     checked={isChecked}
                     onChange={() => props.onToggleTodo(todo.id)}
@@ -102,38 +88,18 @@ export function TodoListPane(props: TodoListPaneProps) {
                     <div className="flex items-center gap-2">
                       <span
                         className={[
-                          'h-2.5 w-2.5 rounded-full',
+                          'h-2.5 w-2.5 shrink-0 rounded-full',
                           todo.accentToken,
                         ].join(' ')}
                       />
                       <p
                         className={[
-                          'truncate text-sm text-slate-100 transition-opacity',
+                          'whitespace-pre-wrap break-words text-sm text-slate-100 transition-opacity [overflow-wrap:anywhere]',
                           isChecked ? 'line-through opacity-50' : 'opacity-100',
                         ].join(' ')}
                       >
                         {todo.title}
                       </p>
-                    </div>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {priority ? (
-                        <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[11px] text-slate-300">
-                          {priority}
-                        </span>
-                      ) : null}
-                      {todo.dueDate ? (
-                        <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[11px] text-slate-300">
-                          {todo.dueDate}
-                        </span>
-                      ) : null}
-                      {todo.tags.map((tag) => (
-                        <span
-                          key={tag}
-                          className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[11px] text-slate-300"
-                        >
-                          #{tag}
-                        </span>
-                      ))}
                     </div>
                   </div>
                 </label>
@@ -143,7 +109,7 @@ export function TodoListPane(props: TodoListPaneProps) {
         </ol>
 
         {props.todos.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] px-4 py-6 text-sm text-slate-400">
+          <div className="px-4 py-6 text-sm text-slate-400">
             No extracted TODOs yet. Keep writing on the right.
           </div>
         ) : null}

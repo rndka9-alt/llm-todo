@@ -1,10 +1,9 @@
 import { useState } from 'react';
-import type { AnalysisHighlight, DisplayHighlight, NoteBlock } from '../../domain/models';
+import type { AnalysisHighlight, DisplayHighlight } from '../../domain/models';
 import { buildDecoratedText } from './buildDecoratedText';
 
 interface NoteEditorPaneProps {
   noteText: string;
-  blocks: NoteBlock[];
   displayHighlights: DisplayHighlight[];
   analysisHighlights: AnalysisHighlight[];
   onTextChange: (value: string) => void;
@@ -14,6 +13,8 @@ interface NoteEditorPaneProps {
 export function NoteEditorPane(props: NoteEditorPaneProps) {
   const [scrollTop, setScrollTop] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
+  const editorFieldId = 'note-editor-input';
+  const editorFieldName = 'noteText';
   const decoratedSegments = buildDecoratedText(
     props.noteText,
     props.displayHighlights,
@@ -21,10 +22,10 @@ export function NoteEditorPane(props: NoteEditorPaneProps) {
   );
 
   return (
-    <section className="flex h-full min-h-0 flex-col rounded-[28px] border border-white/10 bg-slate-900/65 shadow-[0_24px_80px_rgba(2,6,23,0.45)] backdrop-blur">
-      <div className="relative min-h-0 flex-1 overflow-hidden px-5 py-5">
-        <div className="relative h-full overflow-hidden rounded-[24px] border border-white/10 bg-slate-950/80">
-          <div className="pointer-events-none absolute inset-0 overflow-hidden px-5 py-5">
+    <section className="flex h-full min-h-0 flex-col">
+      <div className="relative min-h-0 flex-1 overflow-hidden">
+        <div className="relative h-full overflow-hidden">
+          <div className="pointer-events-none absolute inset-0 overflow-hidden px-4 py-4">
             <div
               className="min-h-full whitespace-pre-wrap break-words font-mono text-[15px] leading-7 text-transparent [overflow-wrap:anywhere]"
               style={{
@@ -40,6 +41,8 @@ export function NoteEditorPane(props: NoteEditorPaneProps) {
           </div>
 
           <textarea
+            id={editorFieldId}
+            name={editorFieldName}
             value={props.noteText}
             onChange={(event) => {
               props.onTextChange(event.currentTarget.value);
@@ -72,7 +75,7 @@ export function NoteEditorPane(props: NoteEditorPaneProps) {
             }}
             placeholder="Write freeform notes here. TODOs will be derived on the left."
             spellCheck={false}
-            className="relative z-10 h-full w-full resize-none bg-transparent px-5 py-5 font-mono text-[15px] leading-7 text-slate-100 outline-none caret-sky-300 [overflow-wrap:anywhere]"
+            className="relative z-10 h-full w-full resize-none bg-transparent px-4 py-4 font-mono text-[15px] leading-7 text-slate-100 outline-none caret-sky-300 [overflow-wrap:anywhere]"
           />
         </div>
       </div>

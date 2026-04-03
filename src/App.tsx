@@ -38,22 +38,34 @@ function AppScreen(props: AppProps) {
 
   return (
     <>
-      <div className="h-screen overflow-hidden px-4 py-4 text-white sm:px-6 lg:px-8">
-        <div className="mx-auto flex h-full max-w-7xl flex-col gap-4">
-          <header className="flex flex-wrap items-center gap-3 rounded-[28px] border border-white/10 bg-slate-900/65 px-5 py-4 shadow-[0_24px_80px_rgba(2,6,23,0.45)] backdrop-blur">
-            <div className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-200">
-              state: <span className="text-sky-200">{workspace.parseState}</span>
-            </div>
-            <div className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300">
-              updated: {formatUpdatedLabel(workspace.lastUpdatedAt)}
-            </div>
-            <div className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300">
-              {workspace.todos.length} todos
-            </div>
-          </header>
+      <div className="h-screen overflow-hidden bg-slate-950 text-white">
+        <div className="flex h-full w-full flex-col">
+          <div className="border-b border-white/10">
+            <header className="flex flex-wrap items-center gap-3">
+              <div className="rounded-full bg-white/5 px-4 py-2 text-sm text-slate-200">
+                state: <span className="text-sky-200">{workspace.parseState}</span>
+              </div>
+              <div className="rounded-full bg-white/5 px-4 py-2 text-sm text-slate-300">
+                updated: {formatUpdatedLabel(workspace.lastUpdatedAt)}
+              </div>
+              <div className="rounded-full bg-white/5 px-4 py-2 text-sm text-slate-300">
+                {workspace.todos.length} todos
+              </div>
+            </header>
+          </div>
 
-          <div className="min-h-0 flex-1 overflow-x-auto pb-1">
-            <main className="grid h-full min-h-0 min-w-[60rem] grid-cols-[minmax(20rem,0.9fr)_minmax(32rem,1.4fr)] gap-4">
+          <main className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1.2fr)_minmax(0,0.8fr)] min-[700px]:grid-cols-[minmax(0,0.9fr)_minmax(0,1.4fr)] min-[700px]:grid-rows-1">
+            <div className="min-h-0 border-b border-white/10 min-[700px]:order-2 min-[700px]:border-b-0 min-[700px]:border-l min-[700px]:border-white/10">
+              <NoteEditorPane
+                noteText={workspace.noteText}
+                displayHighlights={workspace.displayHighlights}
+                analysisHighlights={workspace.analysisHighlights}
+                onTextChange={workspace.setNoteText}
+                onSelectionChange={workspace.updateSelection}
+              />
+            </div>
+
+            <div className="min-h-0 min-[700px]:order-1">
               <TodoListPane
                 todos={workspace.todos}
                 activeTodoId={workspace.activeTodoId}
@@ -61,17 +73,8 @@ function AppScreen(props: AppProps) {
                 checkedTodoIds={workspace.checkedTodoIds}
                 onToggleTodo={workspace.toggleTodo}
               />
-
-              <NoteEditorPane
-                noteText={workspace.noteText}
-                blocks={workspace.blocks}
-                displayHighlights={workspace.displayHighlights}
-                analysisHighlights={workspace.analysisHighlights}
-                onTextChange={workspace.setNoteText}
-                onSelectionChange={workspace.updateSelection}
-              />
-            </main>
-          </div>
+            </div>
+          </main>
         </div>
       </div>
       <ToastViewport toasts={toastQueue.toasts} onDismiss={toastQueue.dismissToast} />

@@ -11,7 +11,9 @@ const repository: WorkspaceSnapshotRepository = {
 
 describe('App', () => {
   it('renders extracted todos and refreshes them after note edits', async () => {
-    render(<App adapter={new MockTodoExtractionAdapter()} repository={repository} />);
+    const { container } = render(
+      <App adapter={new MockTodoExtractionAdapter()} repository={repository} />,
+    );
     expect(screen.queryByText('LLM TODO PoC')).toBeNull();
     expect(screen.queryByPlaceholderText('Untitled note')).toBeNull();
     expect(screen.queryByText('Derived TODOs')).toBeNull();
@@ -19,16 +21,31 @@ describe('App', () => {
     expect(screen.getByText(/state:/i)).toBeTruthy();
     expect(screen.getByText(/updated:/i)).toBeTruthy();
     expect(screen.getByText(/^\d+\s+todos$/i)).toBeTruthy();
+    const main = container.querySelector('main');
+    expect(main?.className).toContain('grid-cols-1');
+    expect(main?.className).toContain('min-[700px]:grid-cols-[minmax(0,0.9fr)_minmax(0,1.4fr)]');
+    expect(main?.className).not.toContain('min-w-[60rem]');
 
-    expect(
-      await screen.findByText('Fix the mobile settings bug before Friday #frontend', {}, {
-        timeout: 2000,
-      }),
-    ).toBeTruthy();
+    const todoTitle = await screen.findByText('Fix the mobile settings bug before Friday #frontend', {}, {
+      timeout: 2000,
+    });
+    expect(todoTitle).toBeTruthy();
+    expect(todoTitle.className).toContain('whitespace-pre-wrap');
+    expect(todoTitle.className).not.toContain('truncate');
+    const indicator = todoTitle.parentElement?.querySelector('span');
+    expect(indicator?.className).toContain('shrink-0');
+    expect(container.querySelector('ol')?.className).toContain('space-y-2');
+    expect(container.querySelector('ol')?.textContent).not.toContain('high');
 
     const editor = screen.getByPlaceholderText(
       'Write freeform notes here. TODOs will be derived on the left.',
     );
+    expect(editor.getAttribute('id')).toBe('note-editor-input');
+    expect(editor.getAttribute('name')).toBe('noteText');
+
+    const checkbox = screen.getAllByRole('checkbox')[0];
+    expect(checkbox.getAttribute('id')).toBeTruthy();
+    expect(checkbox.getAttribute('name')).toBe(checkbox.getAttribute('id'));
 
     fireEvent.change(editor, {
       target: {
