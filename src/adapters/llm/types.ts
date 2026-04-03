@@ -8,6 +8,7 @@ export interface TodoExtractionAdapterInput {
   focusBlocks: NoteBlock[];
   contextBlocks: NoteBlock[];
   requestedAt: number;
+  signal?: AbortSignal;
 }
 
 export interface TodoExtractionTrace {

@@ -7,7 +7,7 @@ import { reconcileBlocks } from '../../domain/note/reconcileBlocks';
 import { segmentNote } from '../../domain/note/segmentNote';
 import { sampleNoteText, sampleNoteTitle } from '../../data/sampleNote';
 
-export type WorkspaceParseState = 'idle' | 'parsing' | 'updated';
+export type WorkspaceParseState = 'idle' | 'parsing' | 'updated' | 'error';
 
 export interface WorkspaceState {
   noteTitle: string;

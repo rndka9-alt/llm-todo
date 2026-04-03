@@ -1,6 +1,16 @@
+import { useMutation } from '@tanstack/react-query';
 import { startTransition, useEffect, useRef, useState } from 'react';
+import {
+  ConnectionError,
+  HttpStatusError,
+  InvalidJsonResponseError,
+  RequestAbortedError,
+  RequestTimeoutError,
+} from '../../adapters/http/fetchJsonClient';
+import { createTodoExtractionAdapter } from '../../adapters/llm/createTodoExtractionAdapter';
+import type { TodoExtractionAdapter } from '../../adapters/llm/todoExtractionAdapter';
+import type { TodoExtractionAdapterInput } from '../../adapters/llm/types';
 import { indexedDbWorkspaceSnapshotRepository } from '../../adapters/indexedDbWorkspaceSnapshotRepository';
-import { MockTodoExtractionAdapter } from '../../adapters/llm/mockTodoExtractionAdapter';
 import type {
   BlockInterpretation,
   DirtyRegion,
@@ -16,10 +26,31 @@ import {
   selectDirtyBlockIds,
 } from '../../domain/parsing/analysisPlan';
 import { projectTodoProjection } from '../../domain/todos/projectTodoProjection';
+import { createThrottleQueue } from '../../lib/createThrottleQueue';
 import { findTodoForSelection } from '../editor/selection';
 import { createPersistedSnapshot, restoreWorkspaceState } from './workspacePersistence';
 import type { WorkspaceSnapshotRepository } from './workspacePersistence';
 import { createInitialWorkspaceState, type WorkspaceState } from './workspaceState';
+
+interface UseTodoWorkspaceOptions {
+  repository?: WorkspaceSnapshotRepository;
+  adapter?: TodoExtractionAdapter;
+  onExtractionError?: (message: string) => void;
+}
+
+interface ScheduledParseRequest {
+  noteTitle: string;
+  blocks: NoteBlock[];
+  interpretations: BlockInterpretation[];
+  dirtyRegion: DirtyRegion;
+  focusBlockIds: string[];
+}
+
+interface ParseMutationVariables {
+  requestId: number;
+  payload: ScheduledParseRequest;
+  input: TodoExtractionAdapterInput;
+}
 
 function mergeInterpretations(
   previous: BlockInterpretation[],
@@ -50,32 +81,165 @@ function markBlockStatuses(
   });
 }
 
-export function useTodoWorkspace(
-  repository: WorkspaceSnapshotRepository = indexedDbWorkspaceSnapshotRepository,
-) {
+function getExtractionErrorMessage(error: unknown): string | null {
+  if (error instanceof RequestAbortedError) {
+    return null;
+  }
+
+  if (error instanceof InvalidJsonResponseError) {
+    return '응답이 JSON 형태가 아닙니다';
+  }
+
+  if (error instanceof HttpStatusError) {
+    return `서버에러: ${error.status}`;
+  }
+
+  if (error instanceof ConnectionError) {
+    return '서버에 연결할 수 없습니다';
+  }
+
+  if (error instanceof RequestTimeoutError) {
+    return '요청 시간이 초과되었습니다';
+  }
+
+  if (error instanceof Error && error.message.startsWith('Invalid extraction payload:')) {
+    return '응답이 JSON 형태가 아닙니다';
+  }
+
+  return 'TODO 추출에 실패했습니다';
+}
+
+export function useTodoWorkspace(options: UseTodoWorkspaceOptions = {}) {
   const [state, setState] = useState<WorkspaceState>(createInitialWorkspaceState);
   const [isHydrated, setIsHydrated] = useState(false);
-  const adapterRef = useRef(new MockTodoExtractionAdapter());
-  const repositoryRef = useRef(repository);
+  const adapterRef = useRef(options.adapter ?? createTodoExtractionAdapter());
+  const repositoryRef = useRef(options.repository ?? indexedDbWorkspaceSnapshotRepository);
+  const onExtractionErrorRef = useRef(options.onExtractionError);
   const requestIdRef = useRef(0);
-  const timerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
+  const activeAbortControllerRef = useRef<AbortController | null>(null);
+  const parseThrottleRef = useRef(
+    createThrottleQueue<ScheduledParseRequest>(() => undefined, 300),
+  );
   const saveTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
   const initialParseStartedRef = useRef(false);
 
+  onExtractionErrorRef.current = options.onExtractionError;
+  parseThrottleRef.current.setCallback(executeParse);
+
   const projection = projectTodoProjection(state.blocks, state.interpretations);
 
-  function clearPendingTimer() {
-    if (timerRef.current !== null) {
-      window.clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-  }
+  const parseMutation = useMutation({
+    mutationFn: async (variables: ParseMutationVariables) =>
+      adapterRef.current.extract(variables.input),
+    retry: false,
+  });
 
   function clearSaveTimer() {
     if (saveTimerRef.current !== null) {
       window.clearTimeout(saveTimerRef.current);
       saveTimerRef.current = null;
     }
+  }
+
+  function executeParse(payload: ScheduledParseRequest) {
+    if (payload.focusBlockIds.length === 0) {
+      return;
+    }
+
+    activeAbortControllerRef.current?.abort();
+    requestIdRef.current += 1;
+
+    const requestId = requestIdRef.current;
+    const abortController = new AbortController();
+    const parsingBlocks = markBlockStatuses(payload.blocks, payload.focusBlockIds, 'parsing');
+    const focusBlocks = parsingBlocks.filter((block) => payload.focusBlockIds.includes(block.id));
+    const contextBlocks = getContextBlocks(parsingBlocks, payload.focusBlockIds, 1);
+
+    activeAbortControllerRef.current = abortController;
+
+    startTransition(() => {
+      setState((current) => ({
+        ...current,
+        blocks: parsingBlocks,
+        interpretations: payload.interpretations,
+        analysisHighlights: buildAnalysisHighlights(parsingBlocks, payload.dirtyRegion),
+        parseState: 'parsing',
+      }));
+    });
+
+    parseMutation.mutate(
+      {
+        requestId,
+        payload,
+        input: {
+          noteTitle: payload.noteTitle,
+          focusBlocks,
+          contextBlocks,
+          requestedAt: Date.now(),
+          signal: abortController.signal,
+        },
+      },
+      {
+        onSuccess: (output, variables) => {
+          if (requestIdRef.current !== variables.requestId) {
+            return;
+          }
+
+          if (activeAbortControllerRef.current === abortController) {
+            activeAbortControllerRef.current = null;
+          }
+
+          const parsedAt = Date.now();
+          const parsedBlocks = markBlockStatuses(
+            payload.blocks,
+            payload.focusBlockIds,
+            'updated',
+            parsedAt,
+          );
+          const mergedInterpretations = mergeInterpretations(
+            payload.interpretations,
+            output.results,
+            payload.focusBlockIds,
+          );
+
+          startTransition(() => {
+            setState((current) => ({
+              ...current,
+              blocks: parsedBlocks,
+              interpretations: mergedInterpretations,
+              analysisHighlights: [],
+              parseState: 'updated',
+              lastUpdatedAt: parsedAt,
+            }));
+          });
+        },
+        onError: (error, variables) => {
+          if (activeAbortControllerRef.current === abortController) {
+            activeAbortControllerRef.current = null;
+          }
+
+          const message = getExtractionErrorMessage(error);
+
+          if (message === null || requestIdRef.current !== variables.requestId) {
+            return;
+          }
+
+          const failedBlocks = markBlockStatuses(payload.blocks, payload.focusBlockIds, 'error');
+
+          startTransition(() => {
+            setState((current) => ({
+              ...current,
+              blocks: failedBlocks,
+              interpretations: payload.interpretations,
+              analysisHighlights: [],
+              parseState: 'error',
+            }));
+          });
+
+          onExtractionErrorRef.current?.(message);
+        },
+      },
+    );
   }
 
   function scheduleParse(
@@ -85,14 +249,10 @@ export function useTodoWorkspace(
     dirtyRegion: DirtyRegion,
     focusBlockIds: string[],
   ) {
-    clearPendingTimer();
-
     if (focusBlockIds.length === 0) {
       return;
     }
 
-    requestIdRef.current += 1;
-    const requestId = requestIdRef.current;
     const queuedBlocks = markBlockStatuses(blocks, focusBlockIds, 'queued');
     const queuedHighlights = buildAnalysisHighlights(queuedBlocks, dirtyRegion);
 
@@ -106,58 +266,13 @@ export function useTodoWorkspace(
       }));
     });
 
-    timerRef.current = window.setTimeout(() => {
-      const focusBlocks = queuedBlocks.filter((block) => focusBlockIds.includes(block.id));
-      const contextBlocks = getContextBlocks(queuedBlocks, focusBlockIds, 1);
-
-      startTransition(() => {
-        const parsingBlocks = markBlockStatuses(queuedBlocks, focusBlockIds, 'parsing');
-
-        setState((current) => ({
-          ...current,
-          blocks: parsingBlocks,
-          interpretations,
-          analysisHighlights: buildAnalysisHighlights(parsingBlocks, dirtyRegion),
-          parseState: 'parsing',
-        }));
-      });
-
-      void (async () => {
-        await new Promise<void>((resolve) => {
-          window.setTimeout(() => resolve(), 220);
-        });
-
-        const output = await adapterRef.current.extract({
-          noteTitle,
-          focusBlocks,
-          contextBlocks,
-          requestedAt: Date.now(),
-        });
-
-        if (requestIdRef.current !== requestId) {
-          return;
-        }
-
-        const parsedAt = Date.now();
-        const parsedBlocks = markBlockStatuses(queuedBlocks, focusBlockIds, 'updated', parsedAt);
-        const mergedInterpretations = mergeInterpretations(
-          interpretations,
-          output.results,
-          focusBlockIds,
-        );
-
-        startTransition(() => {
-          setState((current) => ({
-            ...current,
-            blocks: parsedBlocks,
-            interpretations: mergedInterpretations,
-            analysisHighlights: [],
-            parseState: 'updated',
-            lastUpdatedAt: parsedAt,
-          }));
-        });
-      })();
-    }, 180);
+    parseThrottleRef.current.schedule({
+      noteTitle,
+      blocks: queuedBlocks,
+      interpretations,
+      dirtyRegion,
+      focusBlockIds,
+    });
   }
 
   useEffect(() => {
@@ -229,8 +344,9 @@ export function useTodoWorkspace(
 
   useEffect(() => {
     return () => {
-      clearPendingTimer();
+      parseThrottleRef.current.cancel();
       clearSaveTimer();
+      activeAbortControllerRef.current?.abort();
       requestIdRef.current += 1;
     };
   }, []);

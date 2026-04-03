@@ -1,23 +1,22 @@
 import type {
-  BlockInterpretation,
   Effort,
-  ExtractedTodoDraft,
   NoteBlock,
-  TodoAnchorReference,
   Priority,
 } from '../../domain/models';
 import { isLlmBlockResultArray } from '../../domain/todo/guards';
 import type { LlmBlockResult } from '../../domain/todo/types';
-import { slugify } from '../../lib/id';
-import { buildTodoExtractionPrompt } from '../../prompts/todo-extraction/buildPrompt';
 import { todoExtractionPromptVersion } from '../../prompts/todo-extraction/manifest';
-import { resolveSourceAnchors } from '../../domain/todos/mapAnchorToRange';
 import type { TodoExtractionAdapter } from './todoExtractionAdapter';
 import type {
   TodoExtractionAdapterInput,
   TodoExtractionResult,
   TodoExtractionTrace,
 } from './types';
+import {
+  buildPromptForBlock,
+  mapBlockInterpretationWithResolvedAnchors,
+  serializeRawResponse,
+} from './todoExtractionShared';
 
 interface CandidateLine {
   raw: string;
@@ -206,115 +205,10 @@ function extractLlmBlockResult(block: NoteBlock): LlmBlockResult {
   };
 }
 
-function mapTodoDraft(
-  blockId: string,
-  todo: LlmBlockResult['todos'][number],
-  sourceAnchors: ExtractedTodoDraft['sourceAnchors'],
-): ExtractedTodoDraft {
-  const draft: ExtractedTodoDraft = {
-    localId: `${blockId}-${slugify(todo.title)}`,
-    title: todo.title,
-    depth: todo.depth,
-    tags: todo.metadata.tags,
-    ambiguities: todo.metadata.ambiguities,
-    sourceAnchors,
-  };
-
-  if (todo.metadata.priority !== null) {
-    draft.priority = todo.metadata.priority;
-  }
-
-  if (todo.metadata.dueAt !== null) {
-    draft.dueDate = todo.metadata.dueAt;
-  }
-
-  if (todo.metadata.effort !== null) {
-    draft.effort = todo.metadata.effort;
-  }
-
-  return draft;
-}
-
-function mapBlockInterpretation(result: LlmBlockResult): BlockInterpretation {
-  return {
-    blockId: result.blockId,
-    hasActionableTodo: result.hasActionableTodo,
-    todos: [],
-  };
-}
-
-function mapBlockInterpretationWithResolvedAnchors(
-  block: NoteBlock,
-  result: LlmBlockResult,
-): BlockInterpretation {
-  const interpretation = mapBlockInterpretation(result);
-  const quoteUsageMap = new Map<string, number>();
-
-  interpretation.todos = result.todos.map((todo) => {
-    const anchorReferences: TodoAnchorReference[] = todo.sourceQuotes.map((quote) => ({
-      quote,
-      occurrence: quoteUsageMap.get(quote) ?? 0,
-    }));
-    const sourceAnchors = resolveSourceAnchors(block.text, anchorReferences);
-
-    sourceAnchors.forEach((anchor) => {
-      const nextOccurrence = anchor.occurrence + 1;
-      const current = quoteUsageMap.get(anchor.quote) ?? 0;
-
-      if (nextOccurrence > current) {
-        quoteUsageMap.set(anchor.quote, nextOccurrence);
-      }
-    });
-
-    return mapTodoDraft(result.blockId, todo, sourceAnchors);
-  });
-
-  interpretation.hasActionableTodo = interpretation.todos.length > 0;
-
-  return interpretation;
-}
-
-function partitionContextBlocks(
-  targetBlock: NoteBlock,
-  contextBlocks: NoteBlock[],
-): { before: NoteBlock[]; after: NoteBlock[] } {
-  const siblings = contextBlocks
-    .filter((block) => block.id !== targetBlock.id)
-    .slice()
-    .sort((left, right) => left.range.start - right.range.start);
-
-  return {
-    before: siblings.filter((block) => block.range.end <= targetBlock.range.start),
-    after: siblings.filter((block) => block.range.start >= targetBlock.range.end),
-  };
-}
-
-function buildPromptForBlock(input: TodoExtractionAdapterInput, block: NoteBlock): string {
-  const { before, after } = partitionContextBlocks(block, input.contextBlocks);
-
-  return buildTodoExtractionPrompt({
-    currentTimeIso: new Date(input.requestedAt).toISOString(),
-    targetBlockJson: JSON.stringify(block, null, 2),
-    contextBlocksBeforeJson: JSON.stringify(before, null, 2),
-    contextBlocksAfterJson: JSON.stringify(after, null, 2),
-    optionalHintsJson: JSON.stringify(
-      {
-        noteTitle: input.noteTitle,
-      },
-      null,
-      2,
-    ),
-  });
-}
-
-function serializeRawResponse(value: unknown): string {
-  return JSON.stringify(value, null, 2);
-}
-
 export class MockTodoExtractionAdapter implements TodoExtractionAdapter {
   async extract(input: TodoExtractionAdapterInput): Promise<TodoExtractionResult> {
     const traces: TodoExtractionTrace[] = [];
-    const results: BlockInterpretation[] = [];
+    const results = [];
 
     for (const block of input.focusBlocks) {
       const builtPrompt = buildPromptForBlock(input, block);
