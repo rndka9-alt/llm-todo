@@ -62,15 +62,8 @@ export function TodoListPane(props: TodoListPaneProps) {
   }, [props.activeTodoId, props.focusNonce]);
 
   return (
-    <section className="flex min-h-[38rem] flex-col rounded-[28px] border border-white/10 bg-slate-900/65 shadow-[0_24px_80px_rgba(2,6,23,0.45)] backdrop-blur">
-      <header className="border-b border-white/10 px-5 py-4">
-        <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Derived TODOs</p>
-        <p className="mt-1 text-sm text-slate-300">
-          Source order first. Projection only. No manual authoring here.
-        </p>
-      </header>
-
-      <div className="flex-1 overflow-y-auto px-4 py-4">
+    <section className="flex h-full min-h-0 flex-col rounded-[28px] border border-white/10 bg-slate-900/65 shadow-[0_24px_80px_rgba(2,6,23,0.45)] backdrop-blur">
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
         <ol className="space-y-2">
           {props.todos.map((todo) => {
             const isChecked = props.checkedTodoIds.includes(todo.id);

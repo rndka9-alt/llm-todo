@@ -5,6 +5,14 @@ import App from './App';
 describe('App', () => {
   it('renders extracted todos and refreshes them after note edits', async () => {
     render(<App />);
+    expect(screen.queryByText('LLM TODO PoC')).toBeNull();
+    expect(screen.queryByPlaceholderText('Untitled note')).toBeNull();
+    expect(screen.queryByText('Derived TODOs')).toBeNull();
+    expect(screen.queryByText('Source Note')).toBeNull();
+    expect(screen.getByText(/state:/i)).toBeTruthy();
+    expect(screen.getByText(/updated:/i)).toBeTruthy();
+    expect(screen.getByText(/^\d+\s+todos$/i)).toBeTruthy();
+
     expect(
       await screen.findByText('Fix the mobile settings bug before Friday #frontend', {}, {
         timeout: 2000,
