@@ -1,7 +1,7 @@
 import { startTransition, useEffect, useRef, useState } from 'react';
+import { indexedDbWorkspaceSnapshotRepository } from '../../adapters/indexedDbWorkspaceSnapshotRepository';
 import { MockTodoExtractionAdapter } from '../../adapters/mockTodoExtractionAdapter';
 import type {
-  AnalysisHighlight,
   BlockInterpretation,
   DirtyRegion,
   NoteBlock,
@@ -16,21 +16,10 @@ import {
   selectDirtyBlockIds,
 } from '../../domain/parsing/analysisPlan';
 import { projectTodoProjection } from '../../domain/todos/projectTodoProjection';
-import { sampleNoteText, sampleNoteTitle } from '../../data/sampleNote';
 import { findTodoForSelection } from '../editor/selection';
-
-interface WorkspaceState {
-  noteTitle: string;
-  noteText: string;
-  blocks: NoteBlock[];
-  interpretations: BlockInterpretation[];
-  analysisHighlights: AnalysisHighlight[];
-  parseState: 'idle' | 'parsing' | 'updated';
-  activeTodoId: string | null;
-  focusNonce: number;
-  checkedTodoIds: string[];
-  lastUpdatedAt: number | null;
-}
+import { createPersistedSnapshot, restoreWorkspaceState } from './workspacePersistence';
+import type { WorkspaceSnapshotRepository } from './workspacePersistence';
+import { createInitialWorkspaceState, type WorkspaceState } from './workspaceState';
 
 function mergeInterpretations(
   previous: BlockInterpretation[],
@@ -61,29 +50,17 @@ function markBlockStatuses(
   });
 }
 
-function createInitialState(): WorkspaceState {
-  const now = Date.now();
-  const blocks = reconcileBlocks([], segmentNote(sampleNoteText), now);
-
-  return {
-    noteTitle: sampleNoteTitle,
-    noteText: sampleNoteText,
-    blocks,
-    interpretations: [],
-    analysisHighlights: [],
-    parseState: 'idle',
-    activeTodoId: null,
-    focusNonce: 0,
-    checkedTodoIds: [],
-    lastUpdatedAt: null,
-  };
-}
-
-export function useTodoWorkspace() {
-  const [state, setState] = useState<WorkspaceState>(createInitialState);
+export function useTodoWorkspace(
+  repository: WorkspaceSnapshotRepository = indexedDbWorkspaceSnapshotRepository,
+) {
+  const [state, setState] = useState<WorkspaceState>(createInitialWorkspaceState);
+  const [isHydrated, setIsHydrated] = useState(false);
   const adapterRef = useRef(new MockTodoExtractionAdapter());
+  const repositoryRef = useRef(repository);
   const requestIdRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
+  const saveTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
+  const initialParseStartedRef = useRef(false);
 
   const projection = projectTodoProjection(state.blocks, state.interpretations);
 
@@ -91,6 +68,13 @@ export function useTodoWorkspace() {
     if (timerRef.current !== null) {
       window.clearTimeout(timerRef.current);
       timerRef.current = null;
+    }
+  }
+
+  function clearSaveTimer() {
+    if (saveTimerRef.current !== null) {
+      window.clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
     }
   }
 
@@ -177,6 +161,38 @@ export function useTodoWorkspace() {
   }
 
   useEffect(() => {
+    let cancelled = false;
+
+    void (async () => {
+      const snapshot = await repositoryRef.current.load().catch(() => null);
+
+      if (cancelled) {
+        return;
+      }
+
+      if (snapshot !== null) {
+        setState(restoreWorkspaceState(snapshot));
+      }
+
+      setIsHydrated(true);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isHydrated || initialParseStartedRef.current) {
+      return;
+    }
+
+    initialParseStartedRef.current = true;
+
+    if (state.interpretations.length > 0) {
+      return;
+    }
+
     const fullDirtyRegion: DirtyRegion = {
       kind: 'replace',
       previousRange: {
@@ -191,9 +207,30 @@ export function useTodoWorkspace() {
     const focusBlockIds = state.blocks.map((block) => block.id);
 
     scheduleParse(state.noteTitle, state.blocks, state.interpretations, fullDirtyRegion, focusBlockIds);
+  }, [isHydrated, state.noteText, state.noteTitle, state.blocks, state.interpretations]);
+
+  useEffect(() => {
+    if (!isHydrated) {
+      return;
+    }
+
+    clearSaveTimer();
+
+    saveTimerRef.current = window.setTimeout(() => {
+      const snapshot = createPersistedSnapshot(state);
+
+      void repositoryRef.current.save(snapshot).catch(() => undefined);
+    }, 240);
 
     return () => {
+      clearSaveTimer();
+    };
+  }, [isHydrated, state]);
+
+  useEffect(() => {
+    return () => {
       clearPendingTimer();
+      clearSaveTimer();
       requestIdRef.current += 1;
     };
   }, []);

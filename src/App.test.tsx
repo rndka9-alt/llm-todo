@@ -1,19 +1,15 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { describe, expect, it } from 'vitest';
 import App from './App';
 
 describe('App', () => {
   it('renders extracted todos and refreshes them after note edits', async () => {
-    vi.useFakeTimers();
-
     render(<App />);
-
-    await act(async () => {
-      vi.advanceTimersByTime(500);
-      await Promise.resolve();
-    });
-
-    expect(screen.getByText('Fix the mobile settings bug before Friday #frontend')).toBeTruthy();
+    expect(
+      await screen.findByText('Fix the mobile settings bug before Friday #frontend', {}, {
+        timeout: 2000,
+      }),
+    ).toBeTruthy();
 
     const editor = screen.getByPlaceholderText(
       'Write freeform notes here. TODOs will be derived on the left.',
@@ -26,13 +22,10 @@ describe('App', () => {
       },
     });
 
-    await act(async () => {
-      vi.advanceTimersByTime(500);
-      await Promise.resolve();
-    });
-
-    expect(screen.getByText('book the launch room tomorrow')).toBeTruthy();
-
-    vi.useRealTimers();
+    expect(
+      await screen.findByText('book the launch room tomorrow', {}, {
+        timeout: 2000,
+      }),
+    ).toBeTruthy();
   });
 });

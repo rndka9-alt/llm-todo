@@ -43,3 +43,9 @@
 - The adapter boundary isolates LLM provider logic from UI and domain state.
 - Projection logic is pure and can move to a server or worker without changing the UI contract.
 - UI state remains thin, so replacing local note state with API-backed persistence later should mainly affect the repository / state access layer rather than component structure.
+
+## Current Persistence Layer
+
+- The PoC now hydrates and saves workspace snapshots through an IndexedDB repository adapter.
+- Persisted data includes source note content, reconciled blocks, parse interpretations, checkbox state, and timestamps.
+- Transient UI state such as active flash focus, analysis pulse overlays, and in-flight parsing state is intentionally excluded from persistence.
