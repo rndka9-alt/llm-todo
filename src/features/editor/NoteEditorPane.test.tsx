@@ -72,6 +72,7 @@ describe('NoteEditorPane', () => {
     const mirror = container.querySelector('.note-editor-mirror');
 
     expect(textarea).toBeTruthy();
+    expect(textarea.className).toContain('scrollbar-hidden');
     expect(mirror).toBeTruthy();
     expect(mirror?.getAttribute('style')).toContain('width: 312px');
   });

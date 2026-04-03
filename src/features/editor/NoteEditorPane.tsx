@@ -131,7 +131,7 @@ export function NoteEditorPane(props: NoteEditorPaneProps) {
             }}
             placeholder="Write freeform notes here. TODOs will be derived on the left."
             spellCheck={false}
-            className={`relative z-10 h-full w-full resize-none bg-transparent ${editorTextClassName} text-slate-100 outline-none caret-sky-300`}
+            className={`scrollbar-hidden relative z-10 h-full w-full resize-none bg-transparent ${editorTextClassName} text-slate-100 outline-none caret-sky-300`}
           />
         </div>
       </div>

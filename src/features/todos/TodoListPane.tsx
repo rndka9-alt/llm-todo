@@ -47,7 +47,7 @@ export function TodoListPane(props: TodoListPaneProps) {
 
   return (
     <section className="flex h-full min-h-0 flex-col">
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto">
         <ol className="space-y-2 px-4 py-4">
           {props.todos.map((todo) => {
             const isChecked = props.checkedTodoIds.includes(todo.id);

@@ -38,6 +38,7 @@ describe('App', () => {
     expect(checkbox.parentElement?.className).toContain('pt-1');
     expect(indicator?.className).toContain('shrink-0');
     expect(container.querySelector('ol')?.className).toContain('space-y-2');
+    expect(container.querySelector('ol')?.parentElement?.className).toContain('scrollbar-hidden');
     expect(container.querySelector('ol')?.textContent).not.toContain('high');
 
     const editor = screen.getByPlaceholderText(
