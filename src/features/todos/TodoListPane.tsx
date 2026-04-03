@@ -76,31 +76,31 @@ export function TodoListPane(props: TodoListPaneProps) {
                 }}
               >
                 <label className="flex cursor-default items-start gap-3">
-                  <input
-                    id={checkboxId}
-                    name={checkboxId}
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={() => props.onToggleTodo(todo.id)}
-                    className="mt-1 h-4 w-4 rounded border-white/20 bg-slate-950 text-sky-300"
-                  />
+                  <div className="flex items-center gap-2 pt-1">
+                    <input
+                      id={checkboxId}
+                      name={checkboxId}
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => props.onToggleTodo(todo.id)}
+                      className="h-4 w-4 rounded border-white/20 bg-slate-950 text-sky-300"
+                    />
+                    <span
+                      className={[
+                        'h-2.5 w-2.5 shrink-0 rounded-full',
+                        todo.accentToken,
+                      ].join(' ')}
+                    />
+                  </div>
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={[
-                          'h-2.5 w-2.5 shrink-0 rounded-full',
-                          todo.accentToken,
-                        ].join(' ')}
-                      />
-                      <p
-                        className={[
-                          'whitespace-pre-wrap break-words text-sm text-slate-100 transition-opacity [overflow-wrap:anywhere]',
-                          isChecked ? 'line-through opacity-50' : 'opacity-100',
-                        ].join(' ')}
-                      >
-                        {todo.title}
-                      </p>
-                    </div>
+                    <p
+                      className={[
+                        'whitespace-pre-wrap break-words text-sm text-slate-100 transition-opacity [overflow-wrap:anywhere]',
+                        isChecked ? 'line-through opacity-50' : 'opacity-100',
+                      ].join(' ')}
+                    >
+                      {todo.title}
+                    </p>
                   </div>
                 </label>
               </li>

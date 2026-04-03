@@ -32,7 +32,10 @@ describe('App', () => {
     expect(todoTitle).toBeTruthy();
     expect(todoTitle.className).toContain('whitespace-pre-wrap');
     expect(todoTitle.className).not.toContain('truncate');
-    const indicator = todoTitle.parentElement?.querySelector('span');
+    const checkbox = screen.getAllByRole('checkbox')[0];
+    const indicator = checkbox.parentElement?.querySelector('span');
+    expect(checkbox.parentElement?.className).toContain('items-center');
+    expect(checkbox.parentElement?.className).toContain('pt-1');
     expect(indicator?.className).toContain('shrink-0');
     expect(container.querySelector('ol')?.className).toContain('space-y-2');
     expect(container.querySelector('ol')?.textContent).not.toContain('high');
@@ -43,7 +46,6 @@ describe('App', () => {
     expect(editor.getAttribute('id')).toBe('note-editor-input');
     expect(editor.getAttribute('name')).toBe('noteText');
 
-    const checkbox = screen.getAllByRole('checkbox')[0];
     expect(checkbox.getAttribute('id')).toBeTruthy();
     expect(checkbox.getAttribute('name')).toBe(checkbox.getAttribute('id'));
 
