@@ -150,6 +150,24 @@ export function NoteEditorPane(props: NoteEditorPaneProps) {
   }
 
   useEffect(() => {
+    function handleSelectionChange() {
+      const textarea = textareaRef.current;
+
+      if (textarea === null || document.activeElement !== textarea) {
+        return;
+      }
+
+      props.onSelectionChange(textarea.selectionStart, textarea.selectionEnd);
+    }
+
+    document.addEventListener('selectionchange', handleSelectionChange);
+
+    return () => {
+      document.removeEventListener('selectionchange', handleSelectionChange);
+    };
+  });
+
+  useEffect(() => {
     const textarea = textareaRef.current;
 
     if (textarea === null || props.focusRange === null || props.focusNonce === 0) {
@@ -206,7 +224,7 @@ export function NoteEditorPane(props: NoteEditorPaneProps) {
 
           {selectionAnchor !== null && props.selectedBlockIds.length > 0 ? (
             <div
-              className="pointer-events-none absolute z-20"
+              className="pointer-events-none absolute z-20 transition-[top,left] duration-150 ease-out"
               style={{
                 left: `${selectionAnchor.left}px`,
                 top: `${selectionAnchor.top}px`,
@@ -253,24 +271,6 @@ export function NoteEditorPane(props: NoteEditorPaneProps) {
             value={props.noteText}
             onChange={(event) => {
               props.onTextChange(event.currentTarget.value);
-              props.onSelectionChange(
-                event.currentTarget.selectionStart,
-                event.currentTarget.selectionEnd,
-              );
-            }}
-            onSelect={(event) => {
-              props.onSelectionChange(
-                event.currentTarget.selectionStart,
-                event.currentTarget.selectionEnd,
-              );
-            }}
-            onKeyUp={(event) => {
-              props.onSelectionChange(
-                event.currentTarget.selectionStart,
-                event.currentTarget.selectionEnd,
-              );
-            }}
-            onClick={(event) => {
               props.onSelectionChange(
                 event.currentTarget.selectionStart,
                 event.currentTarget.selectionEnd,
