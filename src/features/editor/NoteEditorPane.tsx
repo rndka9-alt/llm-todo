@@ -1,4 +1,4 @@
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Trash2 } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { AnalysisHighlight, DisplayHighlight, TextRange } from '../../domain/models';
 import { buildDecoratedText } from './buildDecoratedText';
@@ -12,6 +12,7 @@ interface NoteEditorPaneProps {
   onTextChange: (value: string) => void;
   onSelectionChange: (selectionStart: number, selectionEnd: number) => void;
   onRegenerateSelection: () => void;
+  onRemoveSelection: () => void;
   focusRange: TextRange | null;
   focusNonce: number;
 }
@@ -117,7 +118,7 @@ export function NoteEditorPane(props: NoteEditorPaneProps) {
           ? Math.max(8, marker.offsetLeft - scrollLeft)
           : Math.min(
               Math.max(8, marker.offsetLeft - scrollLeft),
-              Math.max(8, mirrorWidth - 168),
+              Math.max(8, mirrorWidth - 320),
             ),
     };
 
@@ -211,20 +212,37 @@ export function NoteEditorPane(props: NoteEditorPaneProps) {
                 top: `${selectionAnchor.top}px`,
               }}
             >
-              <button
-                type="button"
-                onMouseDown={(event) => {
-                  event.preventDefault();
-                }}
-                onClick={() => {
-                  props.onRegenerateSelection();
-                  clearTextareaSelection();
-                }}
-                className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-sky-300/35 bg-slate-900/95 px-3 py-2 text-xs font-medium text-sky-100 shadow-[0_10px_30px_rgba(2,6,23,0.45)] transition hover:border-sky-200/50 hover:bg-slate-900"
-              >
-                <RefreshCw aria-hidden="true" className="h-4 w-4" strokeWidth={1.8} />
-                <span>재생성하기</span>
-              </button>
+              <div className="pointer-events-auto inline-flex items-center rounded-full border border-sky-300/35 bg-slate-900/95 shadow-[0_10px_30px_rgba(2,6,23,0.45)]">
+                <button
+                  type="button"
+                  onMouseDown={(event) => {
+                    event.preventDefault();
+                  }}
+                  onClick={() => {
+                    props.onRegenerateSelection();
+                    clearTextareaSelection();
+                  }}
+                  className="inline-flex items-center gap-2 rounded-l-full px-3 py-2 text-xs font-medium text-sky-100 transition hover:bg-white/10"
+                >
+                  <RefreshCw aria-hidden="true" className="h-4 w-4" strokeWidth={1.8} />
+                  <span>재생성하기</span>
+                </button>
+                <span className="h-4 w-px bg-sky-300/25" />
+                <button
+                  type="button"
+                  onMouseDown={(event) => {
+                    event.preventDefault();
+                  }}
+                  onClick={() => {
+                    props.onRemoveSelection();
+                    clearTextareaSelection();
+                  }}
+                  className="inline-flex items-center gap-2 rounded-r-full px-3 py-2 text-xs font-medium text-sky-100 transition hover:bg-white/10"
+                >
+                  <Trash2 aria-hidden="true" className="h-4 w-4" strokeWidth={1.8} />
+                  <span>투두 제거하기</span>
+                </button>
+              </div>
             </div>
           ) : null}
 

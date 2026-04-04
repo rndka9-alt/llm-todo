@@ -65,6 +65,7 @@ function AppScreen(props: AppProps) {
                 onTextChange={workspace.setNoteText}
                 onSelectionChange={workspace.updateSelection}
                 onRegenerateSelection={workspace.regenerateSelectedBlocks}
+                onRemoveSelection={workspace.removeSelectedBlockInterpretations}
                 focusRange={workspace.editorFocusRange}
                 focusNonce={workspace.editorFocusNonce}
               />

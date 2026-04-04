@@ -435,6 +435,23 @@ export function useTodoWorkspace(options: UseTodoWorkspaceOptions = {}) {
     });
   }
 
+  function removeSelectedBlockInterpretations() {
+    if (state.selectedBlockIds.length === 0) {
+      return;
+    }
+
+    parseDebounceRef.current.cancel();
+
+    setState((current) => ({
+      ...current,
+      interpretations: current.interpretations.filter(
+        (it) => !current.selectedBlockIds.includes(it.blockId),
+      ),
+      blocks: markBlockStatuses(current.blocks, current.selectedBlockIds, 'idle'),
+      lastUpdatedAt: Date.now(),
+    }));
+  }
+
   function navigateToTodoSource(range: TextRange) {
     setState((current) => ({
       ...current,
@@ -477,6 +494,7 @@ export function useTodoWorkspace(options: UseTodoWorkspaceOptions = {}) {
     setNoteText,
     updateSelection,
     regenerateSelectedBlocks,
+    removeSelectedBlockInterpretations,
     navigateToTodoSource,
     toggleTodo,
   };

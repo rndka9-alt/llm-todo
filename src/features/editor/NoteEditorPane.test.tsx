@@ -66,6 +66,7 @@ describe('NoteEditorPane', () => {
         onTextChange={() => undefined}
         onSelectionChange={() => undefined}
         onRegenerateSelection={() => undefined}
+        onRemoveSelection={() => undefined}
         focusRange={null}
         focusNonce={0}
       />,
@@ -84,6 +85,7 @@ describe('NoteEditorPane', () => {
 
   it('shows a regenerate button for an in-block text selection', () => {
     const onRegenerateSelection = vi.fn();
+    const onRemoveSelection = vi.fn();
     const onSelectionChange = vi.fn();
 
     render(
@@ -99,6 +101,7 @@ describe('NoteEditorPane', () => {
         onTextChange={() => undefined}
         onSelectionChange={onSelectionChange}
         onRegenerateSelection={onRegenerateSelection}
+        onRemoveSelection={onRemoveSelection}
         focusRange={null}
         focusNonce={0}
       />,
@@ -112,6 +115,41 @@ describe('NoteEditorPane', () => {
 
     expect(button.querySelector('svg')).toBeTruthy();
     expect(onRegenerateSelection).toHaveBeenCalledTimes(1);
+    expect(onSelectionChange).toHaveBeenCalledWith(40, 40);
+  });
+
+  it('shows a remove button for an in-block text selection', () => {
+    const onRegenerateSelection = vi.fn();
+    const onRemoveSelection = vi.fn();
+    const onSelectionChange = vi.fn();
+
+    render(
+      <NoteEditorPane
+        noteText={'Launch prep\n- Fix the mobile settings bug before Friday #frontend'}
+        displayHighlights={[]}
+        analysisHighlights={[]}
+        selectedBlockIds={['block-2']}
+        selectionRange={{
+          start: 14,
+          end: 40,
+        }}
+        onTextChange={() => undefined}
+        onSelectionChange={onSelectionChange}
+        onRegenerateSelection={onRegenerateSelection}
+        onRemoveSelection={onRemoveSelection}
+        focusRange={null}
+        focusNonce={0}
+      />,
+    );
+
+    const button = screen.getByRole('button', {
+      name: '투두 제거하기',
+    });
+
+    fireEvent.click(button);
+
+    expect(button.querySelector('svg')).toBeTruthy();
+    expect(onRemoveSelection).toHaveBeenCalledTimes(1);
     expect(onSelectionChange).toHaveBeenCalledWith(40, 40);
   });
 });
