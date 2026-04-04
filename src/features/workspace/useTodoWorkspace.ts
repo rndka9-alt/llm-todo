@@ -185,6 +185,7 @@ export function useTodoWorkspace(options: UseTodoWorkspaceOptions = {}) {
             ...current,
             blocks: markBlockStatuses(current.blocks, [block.id], 'updated', parsedAt),
             interpretations: mergeInterpretations(current.interpretations, output.results, [block.id]),
+            analysisHighlights: current.analysisHighlights.filter((h) => h.blockId !== block.id),
             lastUpdatedAt: parsedAt,
           }));
         });
