@@ -421,7 +421,7 @@ export function useTodoWorkspace(options: UseTodoWorkspaceOptions = {}) {
       blocks: state.blocks,
       interpretations: state.interpretations,
       dirtyRegion: {
-        kind: 'none',
+        kind: 'replace',
         previousRange: {
           start: firstBlock.range.start,
           end: lastBlock.range.end,
