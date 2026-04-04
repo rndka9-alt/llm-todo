@@ -40,6 +40,11 @@ function toGeminiSchema(node: unknown): unknown {
       continue;
     }
 
+    // Gemini response schema가 지원하지 않는 필드 제거
+    if (key === 'additionalProperties') {
+      continue;
+    }
+
     result[key] = toGeminiSchema(value);
   }
 
