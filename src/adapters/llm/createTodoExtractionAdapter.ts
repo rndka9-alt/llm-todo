@@ -1,4 +1,5 @@
 import { getTodoExtractionEnv } from '../../config/todoExtractionEnv';
+import { GeminiLlmClient } from './clients/gemini';
 import { OllamaLlmClient } from './clients/ollama';
 import { LlmTodoExtractionAdapter } from './llmTodoExtractionAdapter';
 import { MockTodoExtractionAdapter } from './mockTodoExtractionAdapter';
@@ -12,6 +13,15 @@ export function createTodoExtractionAdapter(): TodoExtractionAdapter {
       baseUrl: env.ollamaBaseUrl,
       model: env.ollamaModel,
       timeoutMs: env.ollamaTimeoutMs,
+    });
+    return new LlmTodoExtractionAdapter(client);
+  }
+
+  if (env.provider === 'gemini') {
+    const client = new GeminiLlmClient({
+      apiKey: env.geminiApiKey,
+      model: env.geminiModel,
+      timeoutMs: env.geminiTimeoutMs,
     });
     return new LlmTodoExtractionAdapter(client);
   }

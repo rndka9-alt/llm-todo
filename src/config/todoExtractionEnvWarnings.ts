@@ -22,5 +22,19 @@ export function getTodoExtractionEnvWarnings(rawEnv: Record<string, string>): st
     }
   }
 
+  if (provider === 'gemini') {
+    if (!rawEnv.VITE_GEMINI_API_KEY) {
+      warnings.push('VITE_GEMINI_API_KEY 가 비어 있어요. API 키 없이는 요청이 실패합니다.');
+    }
+
+    if (!rawEnv.VITE_GEMINI_MODEL) {
+      warnings.push('VITE_GEMINI_MODEL 이 비어 있어요. 기본값 gemini-3.1-flash-lite-preview 를 사용합니다.');
+    }
+
+    if (!rawEnv.VITE_GEMINI_TIMEOUT_MS) {
+      warnings.push('VITE_GEMINI_TIMEOUT_MS 가 비어 있어요. 기본값 600000ms 를 사용합니다.');
+    }
+  }
+
   return warnings;
 }
