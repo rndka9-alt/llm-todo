@@ -1,4 +1,3 @@
-import { useMutation } from '@tanstack/react-query';
 import { startTransition, useEffect, useRef, useState } from 'react';
 import {
   ConnectionError,
@@ -9,7 +8,6 @@ import {
 } from '../../adapters/http/fetchJsonClient';
 import { createTodoExtractionAdapter } from '../../adapters/llm/createTodoExtractionAdapter';
 import type { TodoExtractionAdapter } from '../../adapters/llm/todoExtractionAdapter';
-import type { TodoExtractionAdapterInput } from '../../adapters/llm/types';
 import { indexedDbWorkspaceSnapshotRepository } from '../../adapters/indexedDbWorkspaceSnapshotRepository';
 import type {
   BlockInterpretation,
@@ -46,12 +44,6 @@ interface ScheduledParseRequest {
   interpretations: BlockInterpretation[];
   dirtyRegion: DirtyRegion;
   focusBlockIds: string[];
-}
-
-interface ParseMutationVariables {
-  requestId: number;
-  payload: ScheduledParseRequest;
-  input: TodoExtractionAdapterInput;
 }
 
 function mergeInterpretations(
@@ -131,12 +123,6 @@ export function useTodoWorkspace(options: UseTodoWorkspaceOptions = {}) {
 
   const projection = projectTodoProjection(state.blocks, state.interpretations);
 
-  const parseMutation = useMutation({
-    mutationFn: async (variables: ParseMutationVariables) =>
-      adapterRef.current.extract(variables.input),
-    retry: false,
-  });
-
   function clearSaveTimer() {
     if (saveTimerRef.current !== null) {
       window.clearTimeout(saveTimerRef.current);
@@ -144,7 +130,7 @@ export function useTodoWorkspace(options: UseTodoWorkspaceOptions = {}) {
     }
   }
 
-  function executeParse(payload: ScheduledParseRequest) {
+  async function executeParse(payload: ScheduledParseRequest) {
     if (payload.focusBlockIds.length === 0) {
       return;
     }
@@ -157,6 +143,7 @@ export function useTodoWorkspace(options: UseTodoWorkspaceOptions = {}) {
     const parsingBlocks = markBlockStatuses(payload.blocks, payload.focusBlockIds, 'parsing');
     const focusBlocks = parsingBlocks.filter((block) => payload.focusBlockIds.includes(block.id));
     const contextBlocks = getContextBlocks(parsingBlocks, payload.focusBlockIds, 1);
+    const requestedAt = Date.now();
 
     activeAbortControllerRef.current = abortController;
     parsingBlockIdsRef.current = payload.focusBlockIds;
@@ -171,81 +158,77 @@ export function useTodoWorkspace(options: UseTodoWorkspaceOptions = {}) {
       }));
     });
 
-    parseMutation.mutate(
-      {
-        requestId,
-        payload,
-        input: {
+    for (let i = 0; i < focusBlocks.length; i++) {
+      const block = focusBlocks[i]!;
+
+      if (abortController.signal.aborted || requestIdRef.current !== requestId) {
+        return;
+      }
+
+      try {
+        const output = await adapterRef.current.extract({
           noteTitle: payload.noteTitle,
-          focusBlocks,
+          focusBlocks: [block],
           contextBlocks,
-          requestedAt: Date.now(),
+          requestedAt,
           signal: abortController.signal,
-        },
-      },
-      {
-        onSuccess: (output, variables) => {
-          if (requestIdRef.current !== variables.requestId) {
-            return;
-          }
+        });
 
-          if (activeAbortControllerRef.current === abortController) {
-            activeAbortControllerRef.current = null;
-            parsingBlockIdsRef.current = [];
-          }
+        if (requestIdRef.current !== requestId) {
+          return;
+        }
 
-          const parsedAt = Date.now();
-          const parsedBlocks = markBlockStatuses(
-            payload.blocks,
-            payload.focusBlockIds,
-            'updated',
-            parsedAt,
-          );
-          const mergedInterpretations = mergeInterpretations(
-            payload.interpretations,
-            output.results,
-            payload.focusBlockIds,
-          );
+        const parsedAt = Date.now();
 
-          startTransition(() => {
-            setState((current) => ({
-              ...current,
-              blocks: parsedBlocks,
-              interpretations: mergedInterpretations,
-              analysisHighlights: [],
-              parseState: 'updated',
-              lastUpdatedAt: parsedAt,
-            }));
-          });
-        },
-        onError: (error, variables) => {
-          if (activeAbortControllerRef.current === abortController) {
-            activeAbortControllerRef.current = null;
-            parsingBlockIdsRef.current = [];
-          }
+        startTransition(() => {
+          setState((current) => ({
+            ...current,
+            blocks: markBlockStatuses(current.blocks, [block.id], 'updated', parsedAt),
+            interpretations: mergeInterpretations(current.interpretations, output.results, [block.id]),
+            lastUpdatedAt: parsedAt,
+          }));
+        });
+      } catch (error) {
+        if (requestIdRef.current !== requestId) {
+          return;
+        }
 
-          const message = getExtractionErrorMessage(error);
+        const message = getExtractionErrorMessage(error);
 
-          if (message === null || requestIdRef.current !== variables.requestId) {
-            return;
-          }
+        if (message === null) {
+          return;
+        }
 
-          const failedBlocks = markBlockStatuses(payload.blocks, payload.focusBlockIds, 'error');
+        const remainingIds = focusBlocks.slice(i).map((b) => b.id);
 
-          startTransition(() => {
-            setState((current) => ({
-              ...current,
-              blocks: failedBlocks,
-              interpretations: payload.interpretations,
-              analysisHighlights: [],
-              parseState: 'error',
-            }));
-          });
+        startTransition(() => {
+          setState((current) => ({
+            ...current,
+            blocks: markBlockStatuses(current.blocks, remainingIds, 'error'),
+            analysisHighlights: [],
+            parseState: 'error',
+          }));
+        });
 
-          onExtractionErrorRef.current?.(message);
-        },
-      },
-    );
+        onExtractionErrorRef.current?.(message);
+        return;
+      }
+    }
+
+    if (requestIdRef.current === requestId) {
+      if (activeAbortControllerRef.current === abortController) {
+        activeAbortControllerRef.current = null;
+        parsingBlockIdsRef.current = [];
+      }
+
+      startTransition(() => {
+        setState((current) => ({
+          ...current,
+          analysisHighlights: [],
+          parseState: 'updated',
+        }));
+      });
+    }
   }
 
   function scheduleParse(

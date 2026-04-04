@@ -132,11 +132,13 @@ describe('useTodoWorkspace', () => {
       result.current.regenerateSelectedBlocks();
     });
 
+    const selectedBlockIds = result.current.selectedBlockIds;
+
     await waitFor(() => {
-      expect(adapter.calls).toHaveLength(1);
+      expect(adapter.calls).toHaveLength(selectedBlockIds.length);
     });
 
-    expect(adapter.calls[0]?.focusBlocks.length).toBe(result.current.selectedBlockIds.length);
-    expect(adapter.calls[0]?.focusBlocks.map((block) => block.id)).toEqual(result.current.selectedBlockIds);
+    const calledBlockIds = adapter.calls.map((call) => call.focusBlocks[0]?.id);
+    expect(calledBlockIds).toEqual(selectedBlockIds);
   });
 });

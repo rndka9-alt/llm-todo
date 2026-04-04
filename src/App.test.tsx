@@ -93,9 +93,9 @@ describe('App', () => {
 
     render(<App adapter={adapter} repository={repository} />);
 
-    await waitFor(() => {
-      expect(adapter.calls).toHaveLength(1);
-    }, { timeout: 2000 });
+    await screen.findByText('updated', { exact: true }, { timeout: 2000 });
+
+    const initialCallCount = adapter.calls.length;
 
     const editor = screen.getByPlaceholderText(
       'Write freeform notes here. TODOs will be derived on the left.',
@@ -117,9 +117,10 @@ describe('App', () => {
     fireEvent.click(button);
 
     await waitFor(() => {
-      expect(adapter.calls).toHaveLength(2);
+      expect(adapter.calls.length).toBeGreaterThan(initialCallCount);
     }, { timeout: 2000 });
 
-    expect(adapter.calls[1]?.focusBlocks.length).toBeGreaterThan(1);
+    const regenerationCalls = adapter.calls.slice(initialCallCount);
+    expect(regenerationCalls.length).toBeGreaterThan(1);
   });
 });
