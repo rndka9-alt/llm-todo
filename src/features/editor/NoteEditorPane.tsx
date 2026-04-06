@@ -23,6 +23,7 @@ export function NoteEditorPane(props: NoteEditorPaneProps) {
   const [mirrorWidth, setMirrorWidth] = useState<number | null>(null);
   const [selectionAnchor, setSelectionAnchor] = useState<{ top: number; left: number } | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const pendingCursorRef = useRef<number | null>(null);
   const selectionMarkerRef = useRef<HTMLSpanElement | null>(null);
   const editorFieldId = 'note-editor-input';
   const editorFieldName = 'noteText';
@@ -98,6 +99,26 @@ export function NoteEditorPane(props: NoteEditorPaneProps) {
     });
   }, [props.noteText]);
 
+  // // 자동 이어쓰기 후 커서 위치 복원
+  useLayoutEffect(() => {
+    const pos = pendingCursorRef.current;
+
+    if (pos === null) {
+      return;
+    }
+
+    pendingCursorRef.current = null;
+
+    const textarea = textareaRef.current;
+
+    if (textarea === null) {
+      return;
+    }
+
+    textarea.setSelectionRange(pos, pos);
+    props.onSelectionChange(pos, pos);
+  }, [props.noteText]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useLayoutEffect(() => {
     if (props.selectionRange === null || props.selectedBlockIds.length === 0) {
       setSelectionAnchor(null);
@@ -134,6 +155,46 @@ export function NoteEditorPane(props: NoteEditorPaneProps) {
       return nextAnchor;
     });
   }, [mirrorWidth, props.noteText, props.selectedBlockIds, props.selectionRange, scrollLeft, scrollTop]);
+
+  function handleKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key !== 'Enter' || event.shiftKey || event.metaKey || event.ctrlKey) {
+      return;
+    }
+
+    const textarea = event.currentTarget;
+    const { value, selectionStart, selectionEnd } = textarea;
+
+    if (selectionStart !== selectionEnd) {
+      return;
+    }
+
+    const lineStart = value.lastIndexOf('\n', selectionStart - 1) + 1;
+    const currentLine = value.slice(lineStart, selectionStart);
+
+    const match = currentLine.match(/^(\s*\/\/)/);
+
+    if (match === null) {
+      return;
+    }
+
+    const commentPrefix = match[1]!;
+    const afterComment = currentLine.slice(commentPrefix.length);
+
+    // // 뒤에 실질적 내용이 있을 때만 자동 이어쓰기
+    if (afterComment.trimStart().length === 0) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const before = value.slice(0, selectionStart);
+    const after = value.slice(selectionStart);
+    const insertion = '\n' + commentPrefix + ' ';
+    const newValue = before + insertion + after;
+
+    pendingCursorRef.current = selectionStart + insertion.length;
+    props.onTextChange(newValue);
+  }
 
   function clearTextareaSelection() {
     const textarea = textareaRef.current;
@@ -269,6 +330,7 @@ export function NoteEditorPane(props: NoteEditorPaneProps) {
             id={editorFieldId}
             name={editorFieldName}
             value={props.noteText}
+            onKeyDown={handleKeyDown}
             onChange={(event) => {
               props.onTextChange(event.currentTarget.value);
               props.onSelectionChange(

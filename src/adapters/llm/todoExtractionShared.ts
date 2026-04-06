@@ -4,6 +4,7 @@ import type {
   NoteBlock,
   TodoAnchorReference,
 } from '../../domain/models';
+import { stripCommentLines } from '../../domain/note/commentLine';
 import { resolveSourceAnchors } from '../../domain/todos/mapAnchorToRange';
 import type { LlmBlockResult } from '../../domain/todo/types';
 import { slugify } from '../../lib/id';
@@ -34,9 +35,12 @@ export function buildPromptForBlock(
 ): string {
   const { before, after } = partitionContextBlocks(block, input.contextBlocks);
 
+  // 혼합 블록에서 // 주석 라인을 제거한 텍스트만 LLM에 전달
+  const promptBlock = { ...block, text: stripCommentLines(block.text) };
+
   return buildTodoExtractionPrompt({
     currentTimeIso: new Date(input.requestedAt).toISOString(),
-    targetBlockJson: JSON.stringify(block, null, 2),
+    targetBlockJson: JSON.stringify(promptBlock, null, 2),
     contextBlocksBeforeJson: JSON.stringify(before, null, 2),
     contextBlocksAfterJson: JSON.stringify(after, null, 2),
     optionalHintsJson: JSON.stringify(

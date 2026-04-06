@@ -16,6 +16,7 @@ import type {
   ParseStatus,
   TextRange,
 } from '../../domain/models';
+import { shouldSkipParsing } from '../../domain/note/commentLine';
 import { diffText } from '../../domain/note/diffText';
 import { reconcileBlocks } from '../../domain/note/reconcileBlocks';
 import { segmentNote } from '../../domain/note/segmentNote';
@@ -366,15 +367,25 @@ export function useTodoWorkspace(options: UseTodoWorkspaceOptions = {}) {
     const nextBlockIds = new Set(nextBlocks.map((block) => block.id));
     const nextInterpretations = state.interpretations.filter((it) => nextBlockIds.has(it.blockId));
 
+    // 주석 전용·trivial 블록은 파싱 대상에서 제외하고 기존 해석도 정리
+    const skippedIds = new Set(
+      dirtyBlockIds.filter((id) => {
+        const block = nextBlocks.find((b) => b.id === id);
+        return block !== undefined && shouldSkipParsing(block.text);
+      }),
+    );
+    const parseBlockIds = dirtyBlockIds.filter((id) => !skippedIds.has(id));
+    const cleanedInterpretations = nextInterpretations.filter((it) => !skippedIds.has(it.blockId));
+
     setState((current) => ({
       ...current,
       noteText: nextText,
       blocks: nextBlocks,
-      interpretations: nextInterpretations,
-      parseState: dirtyBlockIds.length > 0 ? 'parsing' : current.parseState,
+      interpretations: cleanedInterpretations,
+      parseState: parseBlockIds.length > 0 ? 'parsing' : current.parseState,
     }));
 
-    scheduleParse(state.noteTitle, nextBlocks, nextInterpretations, dirtyRegion, dirtyBlockIds);
+    scheduleParse(state.noteTitle, nextBlocks, cleanedInterpretations, dirtyRegion, parseBlockIds);
   }
 
   function updateSelection(selectionStart: number, selectionEnd: number) {
