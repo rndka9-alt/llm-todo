@@ -14,8 +14,8 @@ describe('buildDecoratedText', () => {
             start: 0,
             end: 4,
           },
-          colorToken: 'bg-sky-300/30',
-          accentToken: 'bg-sky-300',
+          colorToken: 'bg-palette-1/30',
+          accentToken: 'bg-palette-1',
         },
       ],
       [
@@ -31,6 +31,6 @@ describe('buildDecoratedText', () => {
       ],
     );
 
-    expect(segments[0]?.className).toContain('bg-slate-500/40');
+    expect(segments[0]?.className).toContain('bg-surface-overlay/40');
   });
 });

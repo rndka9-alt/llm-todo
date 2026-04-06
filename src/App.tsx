@@ -26,10 +26,10 @@ function AppScreen(props: AppProps) {
 
   return (
     <>
-      <div className="h-screen overflow-hidden bg-slate-950 text-white">
+      <div className="h-screen overflow-hidden bg-surface text-content">
         <div className="flex h-full w-full flex-col">
           <main className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1.2fr)_minmax(0,0.8fr)] min-[700px]:grid-cols-[minmax(0,0.9fr)_minmax(0,1.4fr)] min-[700px]:grid-rows-1">
-            <div className="min-h-0 border-b border-white/10 min-[700px]:order-2 min-[700px]:border-b-0 min-[700px]:border-l min-[700px]:border-white/10">
+            <div className="min-h-0 border-b border-separator/10 min-[700px]:order-2 min-[700px]:border-b-0 min-[700px]:border-l min-[700px]:border-separator/10">
               <NoteEditorPane
                 noteText={workspace.noteText}
                 displayHighlights={workspace.displayHighlights}

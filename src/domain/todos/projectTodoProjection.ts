@@ -9,28 +9,28 @@ import { offsetRange } from '../../lib/range';
 
 const colorPalette = [
   {
-    highlight: 'bg-amber-300/30',
-    accent: 'bg-amber-300',
+    highlight: 'bg-palette-0/30',
+    accent: 'bg-palette-0',
   },
   {
-    highlight: 'bg-sky-300/30',
-    accent: 'bg-sky-300',
+    highlight: 'bg-palette-1/30',
+    accent: 'bg-palette-1',
   },
   {
-    highlight: 'bg-emerald-300/30',
-    accent: 'bg-emerald-300',
+    highlight: 'bg-palette-2/30',
+    accent: 'bg-palette-2',
   },
   {
-    highlight: 'bg-rose-300/30',
-    accent: 'bg-rose-300',
+    highlight: 'bg-palette-3/30',
+    accent: 'bg-palette-3',
   },
   {
-    highlight: 'bg-fuchsia-300/30',
-    accent: 'bg-fuchsia-300',
+    highlight: 'bg-palette-4/30',
+    accent: 'bg-palette-4',
   },
   {
-    highlight: 'bg-cyan-300/30',
-    accent: 'bg-cyan-300',
+    highlight: 'bg-palette-5/30',
+    accent: 'bg-palette-5',
   },
 ];
 

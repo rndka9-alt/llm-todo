@@ -70,7 +70,7 @@ export function TodoListPane(props: TodoListPaneProps) {
                 className={[
                   'rounded-2xl transition-all duration-700',
                   isActive || isFlashed
-                    ? 'bg-sky-200/10'
+                    ? 'bg-accent-soft/10'
                     : 'bg-transparent',
                 ].join(' ')}
                 style={{
@@ -86,7 +86,7 @@ export function TodoListPane(props: TodoListPaneProps) {
                         type="checkbox"
                         checked={isChecked}
                         onChange={() => props.onToggleTodo(todo.id)}
-                        className="h-4 w-4 rounded border-white/20 bg-slate-950 text-sky-300"
+                        className="h-4 w-4 rounded border-separator/20 bg-surface text-accent"
                       />
                       <span
                         className={[
@@ -98,7 +98,7 @@ export function TodoListPane(props: TodoListPaneProps) {
                     <div className="min-w-0 flex-1">
                       <p
                         className={[
-                          'whitespace-pre-wrap break-words text-sm text-slate-100 transition-opacity [overflow-wrap:anywhere]',
+                          'whitespace-pre-wrap break-words text-sm text-content-base transition-opacity [overflow-wrap:anywhere]',
                           isChecked ? 'line-through opacity-50' : 'opacity-100',
                         ].join(' ')}
                       >
@@ -109,7 +109,7 @@ export function TodoListPane(props: TodoListPaneProps) {
                   <button
                     type="button"
                     onClick={() => props.onNavigateToSource(todo.displayRange)}
-                    className="shrink-0 pt-1 text-slate-500 transition-colors hover:text-sky-300"
+                    className="shrink-0 pt-1 text-content-faint transition-colors hover:text-accent"
                     aria-label="노트에서 원문 보기"
                   >
                     <ArrowUpRight aria-hidden="true" className="h-3.5 w-3.5" strokeWidth={2} />
@@ -121,7 +121,7 @@ export function TodoListPane(props: TodoListPaneProps) {
         </ol>
 
         {props.todos.length === 0 ? (
-          <div className="px-4 py-6 text-sm text-slate-400">
+          <div className="px-4 py-6 text-sm text-content-muted">
             No extracted TODOs yet. Keep writing on the right.
           </div>
         ) : null}

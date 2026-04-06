@@ -14,8 +14,43 @@
 }
 
 :root {
-  color: #dbe4ff;
-  background: #020617;
+  /* Surface */
+  --color-surface: 2 6 23;              /* slate-950 */
+  --color-surface-raised: 15 23 42;     /* slate-900 */
+  --color-surface-overlay: 100 116 139; /* slate-500 */
+
+  /* Content (text) */
+  --color-content: 255 255 255;          /* white */
+  --color-content-base: 241 245 249;     /* slate-100 */
+  --color-content-subtle: 203 213 225;   /* slate-300 */
+  --color-content-muted: 148 163 184;    /* slate-400 */
+  --color-content-faint: 100 116 139;    /* slate-500 */
+
+  /* Accent */
+  --color-accent: 125 211 252;          /* sky-300 */
+  --color-accent-soft: 186 230 253;     /* sky-200 */
+  --color-accent-fg: 224 242 254;       /* sky-100 */
+
+  /* Separator / border */
+  --color-separator: 255 255 255;       /* white */
+
+  /* Error */
+  --color-error: 254 205 211;           /* rose-200 */
+
+  /* Shadows */
+  --shadow-elevated: 0 10px 30px rgb(var(--color-surface) / 0.45);
+  --shadow-toast: 0 18px 48px rgb(var(--color-surface-raised) / 0.4);
+
+  /* Todo palette */
+  --color-palette-0: 252 211 77;        /* amber-300 */
+  --color-palette-1: 125 211 252;       /* sky-300 */
+  --color-palette-2: 110 231 183;       /* emerald-300 */
+  --color-palette-3: 253 164 175;       /* rose-300 */
+  --color-palette-4: 240 171 252;       /* fuchsia-300 */
+  --color-palette-5: 103 232 249;       /* cyan-300 */
+
+  color: rgb(var(--color-content-base));
+  background: rgb(var(--color-surface));
   font-family:
     "IBM Plex Sans",
     "Pretendard",

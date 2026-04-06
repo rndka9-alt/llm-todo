@@ -56,8 +56,8 @@ describe('NoteEditorPane', () => {
               start: 0,
               end: 12,
             },
-            colorToken: 'bg-amber-300/30',
-            accentToken: 'bg-amber-300',
+            colorToken: 'bg-palette-0/30',
+            accentToken: 'bg-palette-0',
           },
         ]}
         analysisHighlights={[]}

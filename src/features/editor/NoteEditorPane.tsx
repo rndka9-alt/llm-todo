@@ -291,7 +291,7 @@ export function NoteEditorPane(props: NoteEditorPaneProps) {
                 top: `${selectionAnchor.top}px`,
               }}
             >
-              <div className="pointer-events-auto inline-flex items-center rounded-full border border-sky-300/35 bg-slate-900/95 shadow-[0_10px_30px_rgba(2,6,23,0.45)]">
+              <div className="pointer-events-auto inline-flex items-center rounded-full border border-accent/35 bg-surface-raised/95 shadow-elevated">
                 <button
                   type="button"
                   onMouseDown={(event) => {
@@ -301,12 +301,12 @@ export function NoteEditorPane(props: NoteEditorPaneProps) {
                     props.onRegenerateSelection();
                     clearTextareaSelection();
                   }}
-                  className="inline-flex items-center gap-2 rounded-l-full px-3 py-2 text-xs font-medium text-sky-100 transition hover:bg-white/10"
+                  className="inline-flex items-center gap-2 rounded-l-full px-3 py-2 text-xs font-medium text-accent-fg transition hover:bg-content/10"
                 >
                   <RefreshCw aria-hidden="true" className="h-4 w-4" strokeWidth={1.8} />
                   <span>재생성하기</span>
                 </button>
-                <span className="h-4 w-px bg-sky-300/25" />
+                <span className="h-4 w-px bg-accent/25" />
                 <button
                   type="button"
                   onMouseDown={(event) => {
@@ -316,7 +316,7 @@ export function NoteEditorPane(props: NoteEditorPaneProps) {
                     props.onRemoveSelection();
                     clearTextareaSelection();
                   }}
-                  className="inline-flex items-center gap-2 rounded-r-full px-3 py-2 text-xs font-medium text-sky-100 transition hover:bg-white/10"
+                  className="inline-flex items-center gap-2 rounded-r-full px-3 py-2 text-xs font-medium text-accent-fg transition hover:bg-content/10"
                 >
                   <Trash2 aria-hidden="true" className="h-4 w-4" strokeWidth={1.8} />
                   <span>투두 제거하기</span>
@@ -344,7 +344,7 @@ export function NoteEditorPane(props: NoteEditorPaneProps) {
             }}
             placeholder="Write freeform notes here. TODOs will be derived on the left."
             spellCheck={false}
-            className={`scrollbar-hidden relative z-10 h-full w-full resize-none bg-transparent ${editorTextClassName} text-slate-100 outline-none caret-sky-300`}
+            className={`scrollbar-hidden relative z-10 h-full w-full resize-none bg-transparent ${editorTextClassName} text-content-base outline-none caret-accent`}
           />
 
           {props.analysisHighlights.length > 0 ? (

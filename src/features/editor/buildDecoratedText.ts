@@ -12,7 +12,7 @@ function pickSegmentClass(
   analysisHighlight: AnalysisHighlight | undefined,
 ): string {
   if (analysisHighlight) {
-    return 'rounded bg-slate-500/40';
+    return 'rounded bg-surface-overlay/40';
   }
 
   if (displayHighlight) {

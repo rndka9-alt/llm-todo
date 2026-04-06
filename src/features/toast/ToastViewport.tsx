@@ -16,7 +16,7 @@ export function ToastViewport(props: ToastViewportProps) {
         {props.toasts.map((toast) => (
           <div
             key={toast.id}
-            className="pointer-events-auto flex items-center justify-between rounded-2xl border border-rose-200/20 bg-slate-950/95 px-4 py-3 text-sm text-slate-100 shadow-[0_18px_48px_rgba(15,23,42,0.4)] backdrop-blur"
+            className="pointer-events-auto flex items-center justify-between rounded-2xl border border-error/20 bg-surface/95 px-4 py-3 text-sm text-content-base shadow-toast backdrop-blur"
           >
             <p>{toast.message}</p>
             <button
@@ -24,7 +24,7 @@ export function ToastViewport(props: ToastViewportProps) {
               onClick={() => {
                 props.onDismiss(toast.id);
               }}
-              className="ml-4 rounded-full border border-white/10 px-2 py-1 text-xs text-slate-300"
+              className="ml-4 rounded-full border border-separator/10 px-2 py-1 text-xs text-content-subtle"
             >
               닫기
             </button>
