@@ -26,5 +26,31 @@ export function isTrivialBlock(text: string): boolean {
 }
 
 export function shouldSkipParsing(text: string): boolean {
-  return isCommentOnlyBlock(text) || isTrivialBlock(text);
+  if (isCommentOnlyBlock(text) || isTrivialBlock(text)) {
+    return true;
+  }
+
+  // 주석 라인을 제거한 뒤 남은 내용이 trivial이면 파싱 불필요
+  const nonCommentText = stripCommentLines(text);
+  return nonCommentText.length === 0 || isTrivialBlock(nonCommentText);
+}
+
+export interface CommentLineRange {
+  start: number;
+  end: number;
+}
+
+export function getCommentLineRanges(text: string): CommentLineRange[] {
+  const ranges: CommentLineRange[] = [];
+  let pos = 0;
+
+  for (const line of text.split('\n')) {
+    if (isCommentLine(line)) {
+      ranges.push({ start: pos, end: pos + line.length });
+    }
+
+    pos += line.length + 1;
+  }
+
+  return ranges;
 }

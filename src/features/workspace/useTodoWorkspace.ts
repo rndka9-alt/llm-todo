@@ -166,6 +166,27 @@ export function useTodoWorkspace(options: UseTodoWorkspaceOptions = {}) {
         return;
       }
 
+      // 주석 전용·trivial 블록은 LLM 호출 없이 빈 해석으로 처리
+      if (shouldSkipParsing(block.text)) {
+        const skippedAt = Date.now();
+
+        startTransition(() => {
+          setState((current) => ({
+            ...current,
+            blocks: markBlockStatuses(current.blocks, [block.id], 'updated', skippedAt),
+            interpretations: mergeInterpretations(
+              current.interpretations,
+              [{ blockId: block.id, hasActionableTodo: false, todos: [] }],
+              [block.id],
+            ),
+            analysisHighlights: current.analysisHighlights.filter((h) => h.blockId !== block.id),
+            lastUpdatedAt: skippedAt,
+          }));
+        });
+
+        continue;
+      }
+
       try {
         const output = await adapterRef.current.extract({
           noteTitle: payload.noteTitle,

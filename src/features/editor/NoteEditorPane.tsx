@@ -1,7 +1,55 @@
 import { RefreshCw, Trash2 } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { AnalysisHighlight, DisplayHighlight, TextRange } from '../../domain/models';
+import { getCommentLineRanges, type CommentLineRange } from '../../domain/note/commentLine';
 import { buildDecoratedText } from './buildDecoratedText';
+
+interface CommentOverlaySegment {
+  key: string;
+  text: string;
+  className: string;
+}
+
+function buildCommentOverlaySegments(text: string, ranges: CommentLineRange[]): CommentOverlaySegment[] {
+  if (ranges.length === 0) {
+    return [];
+  }
+
+  const boundaries = new Set<number>([0, text.length]);
+
+  for (const range of ranges) {
+    boundaries.add(range.start);
+    boundaries.add(range.end);
+  }
+
+  const sorted = [...boundaries].sort((left, right) => left - right);
+  const segments: CommentOverlaySegment[] = [];
+
+  for (let i = 0; i < sorted.length - 1; i += 1) {
+    const start = sorted[i];
+    const end = sorted[i + 1];
+
+    if (typeof start !== 'number' || typeof end !== 'number') {
+      continue;
+    }
+
+    const slice = text.slice(start, end);
+
+    if (slice.length === 0) {
+      continue;
+    }
+
+    const inComment = ranges.some((range) => range.start <= start && range.end >= end);
+
+    segments.push({
+      key: `c:${start}:${end}`,
+      text: slice,
+      className: inComment ? 'bg-surface/60' : '',
+    });
+  }
+
+  return segments;
+}
 
 interface NoteEditorPaneProps {
   noteText: string;
@@ -40,6 +88,8 @@ export function NoteEditorPane(props: NoteEditorPaneProps) {
     [],
     props.analysisHighlights,
   );
+  const commentLineRanges = getCommentLineRanges(props.noteText);
+  const commentOverlaySegments = buildCommentOverlaySegments(props.noteText, commentLineRanges);
   const editorTextClassName =
     'min-h-full whitespace-pre-wrap break-words px-4 py-4 font-mono text-[15px] leading-7 [overflow-wrap:anywhere]';
 
@@ -157,6 +207,10 @@ export function NoteEditorPane(props: NoteEditorPaneProps) {
   }, [mirrorWidth, props.noteText, props.selectedBlockIds, props.selectionRange, scrollLeft, scrollTop]);
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.nativeEvent.isComposing) {
+      return;
+    }
+
     if (event.key !== 'Enter' || event.shiftKey || event.metaKey || event.ctrlKey) {
       return;
     }
@@ -346,6 +400,24 @@ export function NoteEditorPane(props: NoteEditorPaneProps) {
             spellCheck={false}
             className={`scrollbar-hidden relative z-10 h-full w-full resize-none bg-transparent ${editorTextClassName} text-content-base outline-none caret-accent`}
           />
+
+          {commentOverlaySegments.length > 0 ? (
+            <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-20 overflow-hidden">
+              <div
+                className={`${editorTextClassName} text-transparent`}
+                style={{
+                  transform: `translate(${-scrollLeft}px, ${-scrollTop}px)`,
+                  width: mirrorWidth === null ? undefined : `${mirrorWidth}px`,
+                }}
+              >
+                {commentOverlaySegments.map((segment) => (
+                  <span key={segment.key} className={segment.className}>
+                    {segment.text}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ) : null}
 
           {props.analysisHighlights.length > 0 ? (
             <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-20 overflow-hidden animate-pulse">
