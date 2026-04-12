@@ -44,7 +44,7 @@ export class OllamaLlmClient implements LlmClient {
     const rawEnvelope = await postJson({
       url: buildRequestUrl(this.options.baseUrl),
       timeoutMs: this.options.timeoutMs,
-      signal: request.signal,
+      ...(typeof request.signal === 'undefined' ? {} : { signal: request.signal }),
       body: {
         model: this.options.model,
         stream: false,

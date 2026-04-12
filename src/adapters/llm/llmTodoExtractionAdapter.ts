@@ -31,7 +31,7 @@ export class LlmTodoExtractionAdapter implements TodoExtractionAdapter {
       const response = await this.client.complete({
         prompt: builtPrompt,
         responseSchema: todoExtractionResponseSchema,
-        signal: input.signal,
+        ...(typeof input.signal === 'undefined' ? {} : { signal: input.signal }),
       });
 
       traces.push({

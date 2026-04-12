@@ -4,13 +4,15 @@
     "skipLibCheck": true,
     "module": "ESNext",
     "moduleResolution": "Bundler",
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "types": ["vite/client"]
   },
   "include": [
     "vite.config.ts",
     "vitest.config.ts",
     "postcss.config.js",
     "tailwind.config.js",
+    "src/config/todoExtractionEnv.ts",
     "src/config/todoExtractionEnvWarnings.ts"
   ]
 }

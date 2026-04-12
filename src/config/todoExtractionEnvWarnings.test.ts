@@ -30,4 +30,29 @@ describe('getTodoExtractionEnvWarnings', () => {
       }),
     ).toEqual([]);
   });
+
+  it('warns when arliai provider misses required values', () => {
+    expect(
+      getTodoExtractionEnvWarnings({
+        VITE_TODO_EXTRACTION_PROVIDER: 'arliai',
+      }),
+    ).toEqual([
+      'VITE_ARLIAI_API_KEY 가 비어 있어요. API 키 없이는 요청이 실패합니다.',
+      'VITE_ARLIAI_BASE_URL 이 비어 있어요. 기본값 https://api.arliai.com/v1 를 사용합니다.',
+      'VITE_ARLIAI_MODEL 이 비어 있어요. 기본값 Mistral-Small-3.1-24B-Instruct-2503 를 사용합니다.',
+      'VITE_ARLIAI_TIMEOUT_MS 가 비어 있어요. 기본값 600000ms 를 사용합니다.',
+    ]);
+  });
+
+  it('returns no warnings when arliai env is complete', () => {
+    expect(
+      getTodoExtractionEnvWarnings({
+        VITE_TODO_EXTRACTION_PROVIDER: 'arliai',
+        VITE_ARLIAI_API_KEY: 'test-key',
+        VITE_ARLIAI_BASE_URL: 'https://api.arliai.com/v1',
+        VITE_ARLIAI_MODEL: 'Mistral-Small-3.1-24B-Instruct-2503',
+        VITE_ARLIAI_TIMEOUT_MS: '600000',
+      }),
+    ).toEqual([]);
+  });
 });

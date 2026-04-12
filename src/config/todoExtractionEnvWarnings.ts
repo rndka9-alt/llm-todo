@@ -1,4 +1,6 @@
-export function getTodoExtractionEnvWarnings(rawEnv: Record<string, string>): string[] {
+import type { TodoExtractionRawEnv } from './todoExtractionEnv';
+
+export function getTodoExtractionEnvWarnings(rawEnv: TodoExtractionRawEnv): string[] {
   const warnings: string[] = [];
   const provider = rawEnv.VITE_TODO_EXTRACTION_PROVIDER;
 
@@ -33,6 +35,28 @@ export function getTodoExtractionEnvWarnings(rawEnv: Record<string, string>): st
 
     if (!rawEnv.VITE_GEMINI_TIMEOUT_MS) {
       warnings.push('VITE_GEMINI_TIMEOUT_MS 가 비어 있어요. 기본값 600000ms 를 사용합니다.');
+    }
+  }
+
+  if (provider === 'arliai') {
+    if (!rawEnv.VITE_ARLIAI_API_KEY) {
+      warnings.push('VITE_ARLIAI_API_KEY 가 비어 있어요. API 키 없이는 요청이 실패합니다.');
+    }
+
+    if (!rawEnv.VITE_ARLIAI_BASE_URL) {
+      warnings.push(
+        'VITE_ARLIAI_BASE_URL 이 비어 있어요. 기본값 https://api.arliai.com/v1 를 사용합니다.',
+      );
+    }
+
+    if (!rawEnv.VITE_ARLIAI_MODEL) {
+      warnings.push(
+        'VITE_ARLIAI_MODEL 이 비어 있어요. 기본값 Mistral-Small-3.1-24B-Instruct-2503 를 사용합니다.',
+      );
+    }
+
+    if (!rawEnv.VITE_ARLIAI_TIMEOUT_MS) {
+      warnings.push('VITE_ARLIAI_TIMEOUT_MS 가 비어 있어요. 기본값 600000ms 를 사용합니다.');
     }
   }
 

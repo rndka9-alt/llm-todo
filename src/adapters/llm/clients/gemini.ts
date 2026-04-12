@@ -105,7 +105,7 @@ export class GeminiLlmClient implements LlmClient {
     const rawEnvelope = await postJson({
       url: buildRequestUrl(this.options.model, this.options.apiKey),
       timeoutMs: this.options.timeoutMs,
-      signal: request.signal,
+      ...(typeof request.signal === 'undefined' ? {} : { signal: request.signal }),
       body: {
         contents: [
           {

@@ -1,4 +1,5 @@
 import { getTodoExtractionEnv } from '../../config/todoExtractionEnv';
+import { ArliAiLlmClient } from './clients/arliai';
 import { GeminiLlmClient } from './clients/gemini';
 import { OllamaLlmClient } from './clients/ollama';
 import { LlmTodoExtractionAdapter } from './llmTodoExtractionAdapter';
@@ -22,6 +23,16 @@ export function createTodoExtractionAdapter(): TodoExtractionAdapter {
       apiKey: env.geminiApiKey,
       model: env.geminiModel,
       timeoutMs: env.geminiTimeoutMs,
+    });
+    return new LlmTodoExtractionAdapter(client);
+  }
+
+  if (env.provider === 'arliai') {
+    const client = new ArliAiLlmClient({
+      apiKey: env.arliAiApiKey,
+      baseUrl: env.arliAiBaseUrl,
+      model: env.arliAiModel,
+      timeoutMs: env.arliAiTimeoutMs,
     });
     return new LlmTodoExtractionAdapter(client);
   }
