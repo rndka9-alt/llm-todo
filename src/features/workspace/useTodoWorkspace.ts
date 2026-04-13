@@ -42,7 +42,6 @@ interface UseTodoWorkspaceOptions {
 interface ScheduledParseRequest {
   noteTitle: string;
   blocks: NoteBlock[];
-  interpretations: BlockInterpretation[];
   dirtyRegion: DirtyRegion;
   focusBlockIds: string[];
 }
@@ -74,6 +73,21 @@ function markBlockStatuses(
       lastParsedAt: parsedAt === null ? block.lastParsedAt : parsedAt,
     };
   });
+}
+
+function buildQueuedOrParsingState(
+  current: WorkspaceState,
+  blockIds: string[],
+  status: 'queued' | 'parsing',
+  dirtyRegion: DirtyRegion,
+): Pick<WorkspaceState, 'blocks' | 'analysisHighlights' | 'parseState'> {
+  const blocks = markBlockStatuses(current.blocks, blockIds, status);
+
+  return {
+    blocks,
+    analysisHighlights: buildAnalysisHighlights(blocks, dirtyRegion),
+    parseState: 'parsing',
+  };
 }
 
 function getExtractionErrorMessage(error: unknown): string | null {
@@ -152,10 +166,12 @@ export function useTodoWorkspace(options: UseTodoWorkspaceOptions = {}) {
     startTransition(() => {
       setState((current) => ({
         ...current,
-        blocks: parsingBlocks,
-        interpretations: payload.interpretations,
-        analysisHighlights: buildAnalysisHighlights(parsingBlocks, payload.dirtyRegion),
-        parseState: 'parsing',
+        ...buildQueuedOrParsingState(
+          current,
+          payload.focusBlockIds,
+          'parsing',
+          payload.dirtyRegion,
+        ),
       }));
     });
 
@@ -257,7 +273,6 @@ export function useTodoWorkspace(options: UseTodoWorkspaceOptions = {}) {
   function scheduleParse(
     noteTitle: string,
     blocks: NoteBlock[],
-    interpretations: BlockInterpretation[],
     dirtyRegion: DirtyRegion,
     focusBlockIds: string[],
   ) {
@@ -275,22 +290,16 @@ export function useTodoWorkspace(options: UseTodoWorkspaceOptions = {}) {
     }
 
     const queuedBlocks = markBlockStatuses(blocks, focusBlockIds, 'queued');
-    const queuedHighlights = buildAnalysisHighlights(queuedBlocks, dirtyRegion);
-
     startTransition(() => {
       setState((current) => ({
         ...current,
-        blocks: queuedBlocks,
-        interpretations,
-        analysisHighlights: queuedHighlights,
-        parseState: 'parsing',
+        ...buildQueuedOrParsingState(current, focusBlockIds, 'queued', dirtyRegion),
       }));
     });
 
     parseDebounceRef.current.schedule({
       noteTitle,
       blocks: queuedBlocks,
-      interpretations,
       dirtyRegion,
       focusBlockIds,
     });
@@ -342,7 +351,7 @@ export function useTodoWorkspace(options: UseTodoWorkspaceOptions = {}) {
     };
     const focusBlockIds = state.blocks.map((block) => block.id);
 
-    scheduleParse(state.noteTitle, state.blocks, state.interpretations, fullDirtyRegion, focusBlockIds);
+    scheduleParse(state.noteTitle, state.blocks, fullDirtyRegion, focusBlockIds);
   }, [isHydrated, state.noteText, state.noteTitle, state.blocks, state.interpretations]);
 
   useEffect(() => {
@@ -406,7 +415,7 @@ export function useTodoWorkspace(options: UseTodoWorkspaceOptions = {}) {
       parseState: parseBlockIds.length > 0 ? 'parsing' : current.parseState,
     }));
 
-    scheduleParse(state.noteTitle, nextBlocks, cleanedInterpretations, dirtyRegion, parseBlockIds);
+    scheduleParse(state.noteTitle, nextBlocks, dirtyRegion, parseBlockIds);
   }
 
   function updateSelection(selectionStart: number, selectionEnd: number) {
@@ -451,7 +460,6 @@ export function useTodoWorkspace(options: UseTodoWorkspaceOptions = {}) {
     executeParse({
       noteTitle: state.noteTitle,
       blocks: state.blocks,
-      interpretations: state.interpretations,
       dirtyRegion: {
         kind: 'replace',
         previousRange: {
